@@ -64,6 +64,3 @@ with connection:
         log_warning(f'Папка \"{name_bookmarks_folder}\" не найдена')
 
 connection.close()
-
-#os.startfile(f'docs/{name_text_file}.txt')
-call(["kate", f'docs/{name_text_file}.txt'])

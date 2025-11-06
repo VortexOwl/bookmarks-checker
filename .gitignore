@@ -1,0 +1,4 @@
+code/__pycache__/
+docs/
+logs/
+src/places.sqlite

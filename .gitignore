@@ -1,4 +1,5 @@
-code/__pycache__/
-docs/
-logs/
-src/places.sqlite
+__pycache__/
+/docs/
+/logs/
+/data/
+.venv/

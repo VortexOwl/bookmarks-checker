@@ -1,0 +1,79 @@
+# ----------------------------------------------------------------------------#
+# Embedded libraries                                                          #
+# ----------------------------------------------------------------------------#
+from sqlite3 import connect as sqlite3_connect
+from shutil import copy2 as shutil_copy2
+from subprocess import call
+from os.path import isfile
+
+# ----------------------------------------------------------------------------#
+# Project modules                                                             #
+# ----------------------------------------------------------------------------#
+from utilities import base_config_project
+from utilities.utilities import creating_necessary_folders
+from src.config import path_bookmarks, name_bookmarks_folder, name_text_file
+from src.logs.logs import log_debug, log_info, log_warning, log_fatal
+
+
+def bookmarks_check():
+    # ----------------------------------------------------------------------------#
+    # Копируем файл БД закладок FireFox в папку проекта                           #
+    # ----------------------------------------------------------------------------#
+    if path_bookmarks == '':
+        log_warning(message='Указан пустой путь для файла закладок.')
+        if not isfile('data/places.sqlite'):
+            log_fatal(message='Отсутствует файл базы данных закладок.')
+    else:
+        shutil_copy2(path_bookmarks, 'data/places.sqlite')
+
+    # ----------------------------------------------------------------------------#
+    # Подключились к БД закладок FireFox                                          #
+    # ----------------------------------------------------------------------------#
+    with sqlite3_connect('data/places.sqlite') as connection:
+        log_debug(message='Подключение к БД прошло успешно.')
+        log_info(message='Начата проверка закладок папки \"' + name_bookmarks_folder + '\"')
+        cursor = connection.cursor()
+        
+        # ----------------------------------------------------------------------------#
+        # Создаем текстовый файл закладок не проверенных модов                        #
+        # ----------------------------------------------------------------------------#
+        creating_necessary_folders('docs')
+        f_write = open(f'docs/{name_text_file}.txt', 'w', encoding='utf-8')
+
+        # ----------------------------------------------------------------------------#
+        # Находим id папки закладок переданной из config                              #
+        # ----------------------------------------------------------------------------#
+        folder_all_bookmarks = cursor.execute(f"select id from moz_bookmarks where title=\'{name_bookmarks_folder}\'").fetchone()
+
+        # ----------------------------------------------------------------------------#
+        # Проверяем существование папки закладок переданной из config                 #
+        # ----------------------------------------------------------------------------#
+        if folder_all_bookmarks:
+            id_folder_all_bookmarks = folder_all_bookmarks[0]
+            
+            # ----------------------------------------------------------------------------#
+            # Находим id и name папок категорий закладок                                  #
+            # ----------------------------------------------------------------------------#
+            categories = cursor.execute(f"select id, title from moz_bookmarks where parent={id_folder_all_bookmarks}")
+            for categorie in categories.fetchall():
+                id_categorie, name_categorie = categorie
+                
+                # ----------------------------------------------------------------------------#
+                # Находим id и name закладок в категориях                                     #
+                # ----------------------------------------------------------------------------#
+                categorie_bookmarks = cursor.execute(f"select guid, title from moz_bookmarks where parent={id_categorie}").fetchall()
+                        
+                # ----------------------------------------------------------------------------#
+                # Проверяем есть ли закладки                                                  #
+                # ----------------------------------------------------------------------------#
+                if categorie_bookmarks:
+                    
+                    # ----------------------------------------------------------------------------#
+                    # Записываем имя категории и количество закладок в ней в файл                 #
+                    # ----------------------------------------------------------------------------#
+                    quantity = len(categorie_bookmarks)
+                    f_write.write(name_categorie + '\n')
+                    f_write.write(str(quantity) + '\n---------------------------------------------------------------------------------------------\n')
+            log_info(message='Информация о количестве закладок в категориях сохранена в файл: ' + name_text_file + '.txt')
+        else:
+            log_warning(message=f'Папка \"{name_bookmarks_folder}\" не найдена')

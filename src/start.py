@@ -2,10 +2,11 @@
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from utilities import base_config_project
-from src.bookmarks_checker import bookmarks_check
+from src.bookmarks.bookmarks_checker import start_bookmarks_checker
 
 
 def start() -> None:
-    bookmarks_check()
+    start_bookmarks_checker()
+    
 
 start()

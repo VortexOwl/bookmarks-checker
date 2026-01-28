@@ -4,7 +4,6 @@
 from datetime import timedelta, datetime
 from os import mkdir
 from os.path import isdir, getsize
-from pathlib import Path
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
@@ -44,4 +43,3 @@ def clearing_logs() -> None:
                         else:
                             if last_date - last_date_log <= timedelta(days=30):
                                 file_logs.write(line)
-

@@ -1,1 +1,1 @@
-from src.logs.logs import *
+from src.logs.loggers import get_smart_logger

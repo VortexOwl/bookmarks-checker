@@ -1,8 +1,11 @@
 from dataclasses import dataclass
-
+from pathlib import Path
 
 @dataclass
 class Config:
-    path_bookmarks = '/home/dmitry/.mozilla/firefox/ooln9kd9.default-release/'          # Путь к файлу закладок FireFox
-    name_bookmarks_folder = 'Фильмы'                                                    # Название папки закладок
-    result_file = 'Result'                                                              # Название текстового файла
+    __path_user: str = Path.home()
+    __browser: str = 'Floorp'
+    __profile: str = '92bs352o.default-release'
+    path_bookmarks: Path = __path_user / 'AppData' / 'Roaming' / __browser / 'Profiles' / __profile
+    bookmarks_folder: str = 'Игры'
+    result_file: str = 'Result'

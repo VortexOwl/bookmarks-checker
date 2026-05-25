@@ -1,12 +1,13 @@
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from utilities import base_config_project
-from src.bookmarks.bookmarks_checker import start_bookmarks_checker
+from basic_utilities.base_config_project import add_workdir_in_PATH
+from src.bookmarks.report import save_files
 
 
 def start() -> None:
-    start_bookmarks_checker()
+    add_workdir_in_PATH()
+    save_files()
     
 
 start()

@@ -6,21 +6,26 @@ from sqlite3 import connect as sqlite3_connect, Cursor, Connection
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.bookmarks.config import name_bookmarks_folder
+from src.bookmarks.config import Config
 from src.logs import get_smart_logger
 
-log = get_smart_logger()
 
+log = get_smart_logger()
+cfg = Config()
 
 def connect_database() -> tuple[Connection, Cursor]:
+    bookmarks_folder = cfg.bookmarks_folder
+
     connection = sqlite3_connect("data/places.sqlite")
     log.debug(message="Подключение к БД прошло успешно.")
-    log.info(message=f'Начата проверка закладок папки "{name_bookmarks_folder}"')
+    log.info(message=f'Начата проверка закладок папки "{bookmarks_folder}"')
     cursor = connection.cursor()
     return connection, cursor
 
 
 def bookmarks_check(cursor: Cursor, id_initial_folder: int) -> str:
+    bookmarks_folder = cfg.bookmarks_folder
+    
     category_reports: list[str] = []
     separator: str = f"\n{'-' * 93}\n"
     
@@ -36,7 +41,7 @@ def bookmarks_check(cursor: Cursor, id_initial_folder: int) -> str:
         category_reports.append(
             "\n".join(
                 [
-                    f"Initial catalog: {name_bookmarks_folder}",
+                    f"Initial catalog: {bookmarks_folder}",
                     f"bookmarks: {len(bookmarks)}",
                     f"catalogs: {len(categories)}",
                 ]
@@ -46,7 +51,7 @@ def bookmarks_check(cursor: Cursor, id_initial_folder: int) -> str:
         category_reports.append(
             "\n".join(
                 [
-                    f"Initial catalog: {name_bookmarks_folder}",
+                    f"Initial catalog: {bookmarks_folder}",
                     f"bookmarks: {len(bookmarks)}",
                 ]
             )
@@ -87,16 +92,18 @@ def bookmarks_check(cursor: Cursor, id_initial_folder: int) -> str:
 
 
 def create_bookmarks_report() -> str:
+    bookmarks_folder = cfg.bookmarks_folder
+
     result_check: str = ""
     conn, cursor = connect_database()
     try:
         if initial_folder := cursor.execute(
             "SELECT id FROM moz_bookmarks WHERE title = ?",
-            (name_bookmarks_folder,),
+            (bookmarks_folder,),
         ).fetchone():
             result_check = bookmarks_check(cursor=cursor, id_initial_folder=initial_folder[0])
         else:
-            log.warning(message=f'Папка "{name_bookmarks_folder}" не найдена')
+            log.warning(message=f'Папка "{bookmarks_folder}" не найдена')
     finally:
         conn.close()
     return result_check

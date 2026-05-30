@@ -1,1 +1,10 @@
-is_console_debug = False
+# ----------------------------------------------------------------------------#
+# Embedded libraries                                                          #
+# ----------------------------------------------------------------------------#
+from dataclasses import dataclass
+
+
+@dataclass
+class BaseConfig:
+    is_console_debug: bool = True
+    

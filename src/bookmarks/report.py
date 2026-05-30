@@ -3,47 +3,72 @@
 # ----------------------------------------------------------------------------#
 from os.path import isfile
 from shutil import copy2 as shutil_copy2
+from pathlib import Path
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.bookmarks.config import path_bookmarks, name_text_file
-from src.bookmarks.database import create_bookmarks_report
-from src.logs import get_smart_logger
+from src.bookmarks.config import Config
+from src.bookmarks.database import BookmarksDatabase
+from src.logs import get_smart_logger, SmartLogger
 from src.basic_utilities.utilities import creating_necessary_folders
 
 
-log = get_smart_logger()
+bd: BookmarksDatabase = BookmarksDatabase()
+cfg: Config = Config()
+log: SmartLogger = get_smart_logger()
 
 
+async def save_bookmarks_report() -> None:
+    """
+    Копирует файл базы данных закладок Firefox, формирует отчёт и сохраняет его в файл.
 
-def save_files() -> None:
-    if path_bookmarks == "":
-        log.warning(msg="Указан пустой путь для файла закладок.")
-        if not isfile("data/places.sqlite"):
+    Логика:
+    1. Проверяет и/или копирует файл `places.sqlite` в папку `data` в текущем каталоге.
+    2. Вызывает метод `BookmarksDatabase.create_bookmarks_report` для формирования отчёта.
+    3. Создаёт папку `docs` (если её нет) и записывает отчёт в файл `<report_file>.txt`.
+    """
+
+    database_file: str = cfg.database_file
+    report_file: str = cfg.report_file
+    report_folder: str = cfg.report_folder
+    
+    path_bookmarks: Path | None = cfg.path_bookmarks
+    path_data_folder: Path = Path.cwd() / "data"
+    path_report_folder: Path = Path.cwd() / report_folder
+    report_path: Path = Path(report_folder) / f"{report_file}.txt"
+
+    Path.mkdir(path_data_folder, exist_ok=True)
+    Path.mkdir(path_report_folder, exist_ok=True)
+    
+    if path_bookmarks is None:
+        log.warning(msg="Указан пустой путь для базы данных закладок.")
+        if not isfile(path_data_folder / database_file):
             log.fatal(msg="Отсутствует файл базы данных закладок.")
             return
     else:
         try:
-            shutil_copy2(f"{path_bookmarks}/places.sqlite", "data/places.sqlite")
-        except Exception:
+            shutil_copy2(path_bookmarks, path_data_folder / database_file)
+        except Exception as err:
             log.fatal(
                 msg=(
-                    "Указан неверный путь к файлу базы данных закладок. "
-                    f"{path_bookmarks}/places.sqlite"
+                    f"Произошла ошибка при копировании: {path_bookmarks}. "
+                    f"Ошибка: {err}"
                 )
             )
             return
 
-    if not (bookmarks_report := create_bookmarks_report()):
+    if not (bookmarks_report := await bd.create_bookmarks_report()):
+        log.warning("Отчёт по закладкам пуст, файл не будет создан.")
         return
-    creating_necessary_folders("docs")
-    with open(f"docs/{name_text_file}.txt", "w", encoding="utf-8") as file_result:
+    
+    with report_path.open("w", encoding="utf-8") as file_result:
         file_result.write(bookmarks_report)
+    
     log.info(
         msg=(
             "Информация о количестве закладок в категориях "
-            f"сохранена в файл: {name_text_file}.txt"
+            f"сохранена в файл: {report_path.name}"
         )
     )
         

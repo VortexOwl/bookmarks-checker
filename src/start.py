@@ -1,12 +1,20 @@
 # ----------------------------------------------------------------------------#
+# Embedded libraries                                                          #
+# ----------------------------------------------------------------------------#
+from asyncio import run as async_run
+
+# ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from utilities import base_config_project
-from src.bookmarks.bookmarks_checker import start_bookmarks_checker
+from basic_utilities.base_config_project import add_workdir_in_PATH
+add_workdir_in_PATH()
+from src.bookmarks.report import save_bookmarks_report
 
 
 def start() -> None:
-    start_bookmarks_checker()
+    """Точка входа: запускает асинхронное сохранение отчёта по закладкам."""
+    async_run(save_bookmarks_report())
     
 
-start()
+if __name__ == "__main__":
+    start()

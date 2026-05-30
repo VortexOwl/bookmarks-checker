@@ -1,6 +1,10 @@
+# ----------------------------------------------------------------------------#
+# Embedded libraries                                                          #
+# ----------------------------------------------------------------------------#
 from dataclasses import dataclass
 from pathlib import Path
 from platform import system
+
 
 @dataclass
 class Config:

@@ -1,48 +1,67 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
-from sqlite3 import connect as sqlite3_connect, Cursor, Connection
+#from sqlite3 import connect as sqlite3_connect, Cursor, Connection
 from pathlib import Path
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.bookmarks.config import Config
-from src.logs import get_smart_logger
+from src.logs import get_smart_logger, SmartLogger
+
+# ----------------------------------------------------------------------------#
+# External libraries                                                          #
+# ----------------------------------------------------------------------------#
+from aiosqlite import connect, Connection
 
 
 class BookmarksDatabase:
-    _cfg = Config()
-    _db_path = Path("data") / "places.sqlite"
-    _log = get_smart_logger()
+    _cfg: Config = Config()
+    _bookmarks_folder:str = _cfg.bookmarks_folder
+    _db_path: Path = Path("data") / _cfg.database_file
+    _log: SmartLogger = get_smart_logger()
 
 
     @classmethod
-    def _connect_database(cls) -> tuple[Connection, Cursor]:
-        bookmarks_folder = cls._cfg.bookmarks_folder
+    async def _connect_database(cls) -> Connection:
+        """
+        Открывает и возвращает асинхронное соединение с БД.
+        Закрытие соединения — ответственность вызывающего кода.
+        """
 
-        connection = sqlite3_connect(cls._db_path)
+        bookmarks_folder:str = cls._bookmarks_folder
+
+        conn = await connect(cls._db_path)
         cls._log.debug(msg="Подключение к БД прошло успешно.")
         cls._log.info(msg=f'Начата проверка закладок папки "{bookmarks_folder}"')
-        cursor = connection.cursor()
-        return connection, cursor
+        return conn
+        
 
 
     @classmethod
-    def bookmarks_check(cls, cursor: Cursor, id_initial_folder: int) -> str:
-        bookmarks_folder = cls._cfg.bookmarks_folder
+    async def bookmarks_check(cls, conn: Connection, id_initial_folder: int) -> str:
+        """
+        Формирует отчёт по закладкам для указанной папки.
+        """
+
+        bookmarks_folder:str = cls._bookmarks_folder
         
         category_reports: list[str] = []
         separator: str = f"\n{'-' * 93}\n"
         
-        bookmarks = cursor.execute(
-            "SELECT id FROM moz_bookmarks WHERE parent = ? AND type = 1", 
+        async with conn.execute(
+            "SELECT id FROM moz_bookmarks WHERE parent = ? AND type = 1",
             (id_initial_folder,),
-        ).fetchall()
-        categories = cursor.execute(
-            "SELECT id, title FROM moz_bookmarks WHERE parent = ? AND type = 2", 
+        ) as cursor:
+            bookmarks = await cursor.fetchall()
+
+        async with conn.execute(
+            "SELECT id, title FROM moz_bookmarks WHERE parent = ? AND type = 2",
             (id_initial_folder,),
-        ).fetchall()
+        ) as cursor:
+            categories = await cursor.fetchall()
+
         if categories:
             category_reports.append(
                 "\n".join(
@@ -62,16 +81,20 @@ class BookmarksDatabase:
                     ]
                 )
             )
+
         for id_category, title_category in categories:
-            bookmarks_in_category = cursor.execute(
-                "SELECT guid, title FROM moz_bookmarks WHERE parent = ? AND type = 1", 
+            async with conn.execute(
+                "SELECT guid, title FROM moz_bookmarks WHERE parent = ? AND type = 1",
                 (id_category,),
-            ).fetchall()
-            catalogs_in_category = cursor.execute(
-                "SELECT guid, title FROM moz_bookmarks WHERE parent = ? AND type = 2", 
-                (id_category,),
-            ).fetchall()
+            ) as cursor:
+                bookmarks_in_category = await cursor.fetchall()
             
+            async with conn.execute(
+                "SELECT guid, title FROM moz_bookmarks WHERE parent = ? AND type = 2",
+                (id_category,),
+            ) as cursor:
+                catalogs_in_category = await cursor.fetchall()
+
             if not bookmarks_in_category:
                 continue
 
@@ -94,23 +117,44 @@ class BookmarksDatabase:
                         ]
                     )
                 )
+
         return separator.join(category_reports)
 
 
     @classmethod
-    def create_bookmarks_report(cls) -> str:
-        bookmarks_folder = cls._cfg.bookmarks_folder
+    async def create_bookmarks_report(cls) -> str:
+        """
+        Создаёт и возвращает отчёт по закладкам из заданной папки.
 
+        Открывает соединение с БД, находит папку закладок по имени из конфигурации
+        и вызывает метод `bookmarks_check`. 
+        
+        В конце гарантированно закрывает соединение.
+        """
+
+        bookmarks_folder: str = cls._bookmarks_folder
         result_check: str = ""
-        conn, cursor = cls._connect_database()
-        try:
-            if initial_folder := cursor.execute(
-                "SELECT id FROM moz_bookmarks WHERE title = ?",
+        conn: Connection | None = None
+
+        try: 
+            conn = await cls._connect_database()
+            
+            async with conn.execute(
+                "SELECT id FROM moz_bookmarks WHERE title = ?", 
                 (bookmarks_folder,),
-            ).fetchone():
-                result_check = cls.bookmarks_check(cursor=cursor, id_initial_folder=initial_folder[0])
+            ) as cursor:
+                initial_folder = await cursor.fetchone()
+
+            if initial_folder:
+                result_check = await cls.bookmarks_check(
+                    conn=conn, 
+                    id_initial_folder=initial_folder[0]
+                )
             else:
                 cls._log.warning(msg=f'Папка "{bookmarks_folder}" не найдена')
+        
         finally:
-            conn.close()
+            if conn is not None:
+                await conn.close()
+
         return result_check

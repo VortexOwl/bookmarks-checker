@@ -1,7 +1,6 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
-#from sqlite3 import connect as sqlite3_connect, Cursor, Connection
 from pathlib import Path
 
 # ----------------------------------------------------------------------------#
@@ -38,6 +37,24 @@ class BookmarksDatabase:
         return conn
         
 
+    @classmethod
+    async def _fetch_all(
+        cls, 
+        conn: Connection, 
+        columns: str, 
+        parent_id: int, 
+        bookmark_type: int
+    ) -> list[tuple]:
+        """
+        Выполняет запрос по переданным параметрам и возвращает все строки результата.
+        """
+        async with conn.execute(
+            f"SELECT {columns} FROM moz_bookmarks WHERE parent = ? AND type = ?",
+            (parent_id, bookmark_type),
+        ) as cursor:
+            return await cursor.fetchall()
+
+
 
     @classmethod
     async def bookmarks_check(cls, conn: Connection, id_initial_folder: int) -> str:
@@ -50,18 +67,19 @@ class BookmarksDatabase:
         category_reports: list[str] = []
         separator: str = f"\n{'-' * 93}\n"
         
-        async with conn.execute(
-            "SELECT id FROM moz_bookmarks WHERE parent = ? AND type = 1",
-            (id_initial_folder,),
-        ) as cursor:
-            bookmarks = await cursor.fetchall()
-
-        async with conn.execute(
-            "SELECT id, title FROM moz_bookmarks WHERE parent = ? AND type = 2",
-            (id_initial_folder,),
-        ) as cursor:
-            categories = await cursor.fetchall()
-
+        bookmarks = await cls._fetch_all(
+            conn=conn, 
+            columns="id", 
+            parent_id=id_initial_folder, 
+            bookmark_type=1
+        )
+        categories = await cls._fetch_all(
+            conn=conn, 
+            columns="id, title", 
+            parent_id=id_initial_folder, 
+            bookmark_type=2
+        )
+        
         if categories:
             category_reports.append(
                 "\n".join(
@@ -83,17 +101,18 @@ class BookmarksDatabase:
             )
 
         for id_category, title_category in categories:
-            async with conn.execute(
-                "SELECT guid, title FROM moz_bookmarks WHERE parent = ? AND type = 1",
-                (id_category,),
-            ) as cursor:
-                bookmarks_in_category = await cursor.fetchall()
-            
-            async with conn.execute(
-                "SELECT guid, title FROM moz_bookmarks WHERE parent = ? AND type = 2",
-                (id_category,),
-            ) as cursor:
-                catalogs_in_category = await cursor.fetchall()
+            bookmarks_in_category = await cls._fetch_all(
+                conn=conn, 
+                columns="guid, title", 
+                parent_id=id_category, 
+                bookmark_type=1
+            )
+            catalogs_in_category = await cls._fetch_all(
+                conn=conn, 
+                columns="guid, title", 
+                parent_id=id_category, 
+                bookmark_type=2
+            )
 
             if not bookmarks_in_category:
                 continue
@@ -156,5 +175,6 @@ class BookmarksDatabase:
         finally:
             if conn is not None:
                 await conn.close()
+                cls._log.debug(msg="Соединение с БД было закрыто.")
 
         return result_check

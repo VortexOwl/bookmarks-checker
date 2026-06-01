@@ -20,7 +20,7 @@ class BookmarksDatabase:
     _bookmarks_folder:str = _cfg.bookmarks_folder
     _db_path: Path = Path("data") / _cfg.database_file
     _log: SmartLogger = get_smart_logger()
-
+    _ALLOWED_COLUMNS: set = {"id", "id, title", "guid, title"}
 
     @classmethod
     async def _connect_database(cls) -> Connection:
@@ -46,8 +46,11 @@ class BookmarksDatabase:
         bookmark_type: int
     ) -> list[tuple]:
         """
-        Выполняет запрос по переданным параметрам и возвращает все строки результата.
+        Выполняет запрос к moz_bookmarks и возвращает все строки результата.
         """
+        if columns not in cls._ALLOWED_COLUMNS:
+            raise ValueError(f"Недопустимое значение columns: {columns!r}")
+
         async with conn.execute(
             f"SELECT {columns} FROM moz_bookmarks WHERE parent = ? AND type = ?",
             (parent_id, bookmark_type),

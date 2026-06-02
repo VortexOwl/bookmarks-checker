@@ -7,10 +7,12 @@ requires-python = ">=3.14"
 license = { file = "LICENSE" }
 dependencies = [
     "aiosqlite>=0.22.1",
+    "fastapi[standard]>=0.136.3",
 ]
 
 [project.scripts]
 start = "start:start"
+web = "web.router:web_start"
 
 [tool.uv]
 package = true

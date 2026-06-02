@@ -17,17 +17,18 @@ class Config:
     report_file: str = f'Bookmarks {bookmarks_folder}'
     database_file: str = 'places.sqlite'
     browser: Path = Path('Floorp')
+    _default_profile_pattern: str = '*.default-default'
     custom_profile: Path | None = None
     path_bookmarks: Path | None = None
     
-    
-    def __post_init__(self) -> None:  # sourcery skip: move-assign
+    def update_config(self) -> None:
+        self.report_file: str = f'Bookmarks {self.bookmarks_folder}'
+        
         sys_name = system()
         path_user: Path = Path.home()
-        default_profile_pattern: str = '*.default-default'
         path_browser: Path | None = self.browser
         path_profiles: Path
-        path_profile_bookmarks: Path
+        path_profile_bookmarks: Path        
 
         if sys_name == 'Windows':
             path_browser = Path('AppData') / 'Roaming' / path_browser / 'Profiles'
@@ -44,7 +45,7 @@ class Config:
             path_profile_bookmarks = path_profiles / self.custom_profile
         else:
             default_profile: Path = next(
-                (d for d in path_profiles.glob(default_profile_pattern) if d.is_dir()), 
+                (d for d in path_profiles.glob(self._default_profile_pattern) if d.is_dir()), 
                 None,
             )
             if default_profile is None:

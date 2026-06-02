@@ -13,7 +13,7 @@ from src.bookmarks.report import save_bookmarks_report
 
 def start() -> None:
     """Точка входа: запускает асинхронное сохранение отчёта по закладкам."""
-    async_run(save_bookmarks_report())
+    async_run(save_bookmarks_report(is_save_file=True))
     
 
 if __name__ == "__main__":

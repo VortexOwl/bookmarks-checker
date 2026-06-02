@@ -17,7 +17,7 @@ from aiosqlite import connect, Connection
 
 class BookmarksDatabase:
     _cfg: Config = Config()
-    _bookmarks_folder:str = _cfg.bookmarks_folder
+    _bookmarks_folder: str = _cfg.bookmarks_folder
     _db_path: Path = Path("data") / _cfg.database_file
     _log: SmartLogger = get_smart_logger()
     _ALLOWED_COLUMNS: set = {"id", "id, title", "guid, title"}
@@ -58,7 +58,6 @@ class BookmarksDatabase:
             return await cursor.fetchall()
 
 
-
     @classmethod
     async def bookmarks_check(cls, conn: Connection, id_initial_folder: int) -> str:
         """
@@ -66,7 +65,6 @@ class BookmarksDatabase:
         """
 
         bookmarks_folder:str = cls._bookmarks_folder
-        
         category_reports: list[str] = []
         separator: str = f"\n{'-' * 93}\n"
         
@@ -117,9 +115,6 @@ class BookmarksDatabase:
                 bookmark_type=2
             )
 
-            if not bookmarks_in_category:
-                continue
-
             if catalogs_in_category:
                 category_reports.append(
                     "\n".join(
@@ -144,7 +139,7 @@ class BookmarksDatabase:
 
 
     @classmethod
-    async def create_bookmarks_report(cls) -> str:
+    async def create_bookmarks_report(cls, cfg: Config) -> str:
         """
         Создаёт и возвращает отчёт по закладкам из заданной папки.
 
@@ -153,6 +148,10 @@ class BookmarksDatabase:
         
         В конце гарантированно закрывает соединение.
         """
+
+        cls._cfg = cfg
+        cls._bookmarks_folder = cls._cfg.bookmarks_folder
+        cls._db_path = Path("data") / cls._cfg.database_file
 
         bookmarks_folder: str = cls._bookmarks_folder
         result_check: str = ""

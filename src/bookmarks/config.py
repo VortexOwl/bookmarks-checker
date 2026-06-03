@@ -15,6 +15,7 @@ class Config:
     bookmarks_folder: str = 'KDE Store'
     report_folder: str = 'docs'
     report_file: str = f'Bookmarks {bookmarks_folder}'
+    custom_report_file: str | None = None
     database_file: str = 'places.sqlite'
     browser: Path = Path('Floorp')
     _default_profile_pattern: str = '*.default-default'
@@ -22,7 +23,10 @@ class Config:
     path_bookmarks: Path | None = None
     
     def update_config(self) -> None:
-        self.report_file: str = f'Bookmarks {self.bookmarks_folder}'
+        if self.custom_report_file is None:
+            self.report_file: str = f'Bookmarks {self.bookmarks_folder}'
+        else:
+            self.report_file: str = self.custom_report_file
         
         sys_name = system()
         path_user: Path = Path.home()

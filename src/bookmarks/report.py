@@ -18,7 +18,7 @@ bd: BookmarksDatabase = BookmarksDatabase()
 log: SmartLogger = get_smart_logger()
 
 
-async def _save_db_in_data(cfg: Config) -> bool:
+async def _save_db_in_data(cfg: Config) -> str | None:
     """
     Проверяет и/или копирует файл `places.sqlite` в папку `data` в текущем каталоге.
     """
@@ -33,21 +33,26 @@ async def _save_db_in_data(cfg: Config) -> bool:
     if path_bookmarks is None:
         log.warning(msg="Указан пустой путь для базы данных закладок.")
         if not isfile(path_data_folder / database_file):
-            log.fatal(msg="Отсутствует файл базы данных закладок.")
-            return False
+            err = "По указанному пути отсутствует файл базы данных закладок."
+            log.fatal(msg=err)
+            return err
         log.info(msg="Проверяется старый файл базы данных закладок.")
     else:
         try:
             shutil_copy2(path_bookmarks, path_data_folder / database_file)
+        except FileNotFoundError:
+            err = "По указанному пути отсутствует файл базы данных закладок."
+            log.fatal(msg=err)
+            return err
         except Exception as err:
             log.fatal(
                 msg=(
                     f"Произошла ошибка при копировании: {path_bookmarks}. "
-                    f"Ошибка: {err}"
+                    f"Ошибка: {type(err)} {err}"
                 )
             )
-            return False
-    return True
+            return err
+    return None
 
 
 async def save_bookmarks_report(
@@ -71,12 +76,13 @@ async def save_bookmarks_report(
     path_report_folder: Path
     report_path: Path
     
-    if not await _save_db_in_data(cfg=cfg):
-        return None, None
+    if err := await _save_db_in_data(cfg=cfg):
+        return None, None, err
 
     if not (bookmarks_report := await bd.create_bookmarks_report(cfg=cfg)):
-        log.warning("Отчёт по закладкам пуст, файл не будет создан.")
-        return None, None
+        err = "Указанная директория отсутствует в базе данных закладок."
+        log.warning(msg=err)
+        return None, None, err
     
     if is_save_file:
         path_report_folder = Path.cwd() / report_folder
@@ -93,6 +99,6 @@ async def save_bookmarks_report(
                 f"сохранена в файл: {report_path.name}"
             )
         )
-        return bookmarks_report, report_path
+        return bookmarks_report, report_path, None
     
-    return bookmarks_report, None
+    return bookmarks_report, None, None

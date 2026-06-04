@@ -9,7 +9,7 @@ from platform import system
 @dataclass
 class Config:
     """
-    Конфигурация для проверки закладок Floorp.
+    Конфигурация для проведения анализа директории закладок браузера.
     """
 
     bookmarks_folder: str = 'KDE Store'

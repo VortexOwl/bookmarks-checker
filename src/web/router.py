@@ -43,6 +43,10 @@ class IsYesOrNo(str, Enum):
 
 
 class WebConfig(BaseModel):
+    """
+    Pydantic модель для обработки сетевых данных, связанных с конфигурацией проекта.
+    """
+
     browser: Browser = Browser.FLOORP
     bookmarks_folder: str | None = None
     custom_profile: str | None = None

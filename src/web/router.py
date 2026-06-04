@@ -1,16 +1,16 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
+from copy import copy
 from enum import Enum
 from pydantic import BaseModel
 from typing import Annotated, Literal
-from copy import copy
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.bookmarks.config import Config
-from src.bookmarks.report import save_bookmarks_report
+from src.bookmarks.report import save_bookmarks_report, clear_report_files
 
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
@@ -109,7 +109,7 @@ async def put_config(
         WebConfig, 
         Depends(WebConfig.web_config_form)
     ]
-) -> dict:
+) -> dict[str, object]:
     """
     Задает конфигурацию для утилиты анализа закладок браузера.
     """
@@ -133,10 +133,10 @@ async def put_config(
 
 
 @web.get(
-    '/bookmarks_report', 
+    '/bookmarks-report', 
     description = "Возвращает отчет по анализу закладок браузера.", 
     tags = ["📊 Анализ закладок"], 
-    summary = "Получить отчет анализа закладок"
+    summary = "Получить отчёт по анализу директории закладок"
 )
 async def get_report(
     is_web_save_file: Annotated[
@@ -184,6 +184,19 @@ async def get_report(
         )
     return PlainTextResponse(content=bookmarks_report)
 
+
+@web.post(
+    '/clear-report-folder',
+    description = "Безопасно очищает папку для отчетов от файлов.",
+    tags = ["⚙️ Конфигурация"],
+    summary = "Очистить от файлов директорию для формирования отчётов"
+)
+async def clear_report_folder() -> dict:
+    """
+    Безопасно очищает папку от файлов.
+    Возвращает сводку по успешным удалениям и ошибкам.
+    """
+    return await clear_report_files(cfg=cfg)
 
 
 def web_start() -> None:

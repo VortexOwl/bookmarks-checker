@@ -13,10 +13,13 @@ from src.bookmarks.report import save_bookmarks_report, clear_report_files
 
 def start() -> None:
     """Точка входа: запускает асинхронное сохранение отчёта по закладкам."""
+    
     async_run(save_bookmarks_report(is_save_file=True))
 
 
 def start_clear() -> None:
+    """Точка входа: запускает асинхронное очищение от файлов директории для формирования отчётов."""
+    
     async_run(clear_report_files())
 
 

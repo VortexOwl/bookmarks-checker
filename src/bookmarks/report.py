@@ -1,24 +1,25 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
+from asyncio import to_thread as asyncio_to_thread
 from os.path import isfile
-from shutil import copy2 as shutil_copy2
 from pathlib import Path
+from shutil import copy2 as shutil_copy2
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
+from src.basic_utilities.utilities import creating_necessary_folders
 from src.bookmarks.config import Config
 from src.bookmarks.database import BookmarksDatabase
 from src.logs import get_smart_logger, SmartLogger
-from src.basic_utilities.utilities import creating_necessary_folders
 
 
 bd: BookmarksDatabase = BookmarksDatabase()
 log: SmartLogger = get_smart_logger()
 
 
-async def _save_db_in_data(cfg: Config) -> bool:
+async def _save_db_in_data(cfg: Config) -> str | None:
     """
     Проверяет и/или копирует файл `places.sqlite` в папку `data` в текущем каталоге.
     """
@@ -33,27 +34,32 @@ async def _save_db_in_data(cfg: Config) -> bool:
     if path_bookmarks is None:
         log.warning(msg="Указан пустой путь для базы данных закладок.")
         if not isfile(path_data_folder / database_file):
-            log.fatal(msg="Отсутствует файл базы данных закладок.")
-            return False
+            err = "По указанному пути отсутствует файл базы данных закладок."
+            log.fatal(msg=err)
+            return err
         log.info(msg="Проверяется старый файл базы данных закладок.")
     else:
         try:
             shutil_copy2(path_bookmarks, path_data_folder / database_file)
+        except FileNotFoundError:
+            err = "По указанному пути отсутствует файл базы данных закладок."
+            log.fatal(msg=err)
+            return err
         except Exception as err:
             log.fatal(
                 msg=(
                     f"Произошла ошибка при копировании: {path_bookmarks}. "
-                    f"Ошибка: {err}"
+                    f"Ошибка: {type(err)} {err}"
                 )
             )
-            return False
-    return True
+            return err
+    return None
 
 
 async def save_bookmarks_report(
     is_save_file: bool, 
     cfg: Config | None = None
-) -> tuple[str, Path | None] | None:
+) -> tuple[str | None, Path | None, str | None]:
     """
     Копирует файл базы данных закладок Firefox, формирует отчёт и сохраняет его в файл.
 
@@ -71,12 +77,13 @@ async def save_bookmarks_report(
     path_report_folder: Path
     report_path: Path
     
-    if not await _save_db_in_data(cfg=cfg):
-        return None, None
+    if err := await _save_db_in_data(cfg=cfg):
+        return None, None, err
 
     if not (bookmarks_report := await bd.create_bookmarks_report(cfg=cfg)):
-        log.warning("Отчёт по закладкам пуст, файл не будет создан.")
-        return None, None
+        err = "Указанная директория отсутствует в базе данных закладок."
+        log.warning(msg=err)
+        return None, None, err
     
     if is_save_file:
         path_report_folder = Path.cwd() / report_folder
@@ -93,6 +100,49 @@ async def save_bookmarks_report(
                 f"сохранена в файл: {report_path.name}"
             )
         )
-        return bookmarks_report, report_path
+        return bookmarks_report, report_path, None
     
-    return bookmarks_report, None
+    return bookmarks_report, None, None
+
+
+async def clear_report_files(cfg : Config = Config()) -> dict[str, int | str, tuple[str]]:
+    """
+    Асинхронно и безопасно очищает папку от файлов.
+    Возвращает статистику по успешным удалениям и ошибкам.
+    """
+    report_folder: str = cfg.report_folder
+    path_report_folder = Path.cwd() / report_folder
+    
+    if not path_report_folder.exists() or not path_report_folder.is_dir():
+        name_err = f"Путь не существует или не является папкой: {path_report_folder}"
+        log.warning(msg=name_err)
+        return {"success": 0, "errors": 1, "names of errors": (name_err)}
+
+    stats = {"success": 0, "errors": 0}
+    names_err = set()
+
+    for file_name in path_report_folder.iterdir():
+        try:
+            if file_name.is_file():
+                await asyncio_to_thread(file_name.unlink, missing_ok=True)
+                stats["success"] += 1
+
+        except PermissionError:
+            name_err = f"Нет прав на удаление файла: {file_name}"
+            log.error(msg=name_err)
+            stats["errors"] += 1
+            names_err.add(name_err)
+
+        except FileNotFoundError:
+            pass
+            
+        except Exception as err:
+            name_err = f"Не удалось удалить {file_name}. Ошибка: {err}"
+            log.exception(msg=name_err)
+            stats["errors"] += 1
+            names_err.add(name_err)
+    
+    stats["names of errors"] = tuple(names_err)
+    log.info(msg="Директория для отчетов была успешно очищена от файлов.")
+    log.debug(msg=f"Сводка выполнения очистки:\n{stats}")
+    return stats

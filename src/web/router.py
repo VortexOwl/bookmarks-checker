@@ -16,7 +16,7 @@ from src.bookmarks.report import save_bookmarks_report, clear_report_files
 # External libraries                                                          #
 # ----------------------------------------------------------------------------#
 from fastapi import FastAPI, Form, Depends, Query
-from fastapi.responses import Response, FileResponse, PlainTextResponse
+from fastapi.responses import Response, FileResponse, PlainTextResponse, RedirectResponse
 from uvicorn import run as uvicorn_run
 
 
@@ -100,6 +100,14 @@ class WebConfig(BaseModel):
             custom_report_file = custom_report_file,
             is_default = is_default
         )
+
+
+@web.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(
+        url="/docs",
+        status_code=307
+    )
 
 
 @web.put(

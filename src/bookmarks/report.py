@@ -68,14 +68,14 @@ class Report:
         2. Вызывает метод `BookmarksDatabase.create_bookmarks_report` для формирования отчёта.
         3. Создаёт папку `docs` (если её нет) и записывает отчёт в файл `<report_file>.txt`.
         """
+        if cfg is None:
+            cfg = Config()
+            cfg.update_config()
+        
         report_file: str = cfg.report_file
         report_folder: str = cfg.report_folder
         path_report_folder: Path
         report_path: Path
-        
-        if cfg is None:
-            cfg = Config()
-            cfg.update_config()
         
         if err := cls._save_db_in_data(cfg=cfg):
             return None, None, err

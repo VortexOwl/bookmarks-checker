@@ -28,14 +28,12 @@ class BookmarksDatabase:
         Открывает и возвращает асинхронное соединение с БД.
         Закрытие соединения — ответственность вызывающего кода.
         """
-
         bookmarks_folder:str = cls._bookmarks_folder
 
         conn = await connect(cls._db_path)
         cls._log.debug(msg="Подключение к БД прошло успешно.")
         cls._log.info(msg=f'Начата проверка закладок папки "{bookmarks_folder}"')
         return conn
-        
 
     @classmethod
     async def _fetch_all(
@@ -57,13 +55,11 @@ class BookmarksDatabase:
         ) as cursor:
             return await cursor.fetchall()
 
-
     @classmethod
     async def bookmarks_check(cls, conn: Connection, id_initial_folder: int) -> str:
         """
         Формирует отчёт по закладкам для указанной папки.
         """
-
         bookmarks_folder:str = cls._bookmarks_folder
         category_reports: list[str] = []
         separator: str = f"\n{'-' * 93}\n"
@@ -137,7 +133,6 @@ class BookmarksDatabase:
 
         return separator.join(category_reports)
 
-
     @classmethod
     async def create_bookmarks_report(cls, cfg: Config) -> str:
         """
@@ -148,7 +143,6 @@ class BookmarksDatabase:
         
         В конце гарантированно закрывает соединение.
         """
-
         cls._cfg = cfg
         cls._bookmarks_folder = cls._cfg.bookmarks_folder
         cls._db_path = Path("data") / cls._cfg.database_file

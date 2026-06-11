@@ -11,6 +11,9 @@ class Config:
     """
     Конфигурация для проведения анализа директории закладок браузера.
     """
+    host: str = "127.0.0.1"
+    port: int = 8000
+    is_unicorn_reload = True
 
     bookmarks_folder: str = 'KDE Store'
     report_folder: str = 'docs'

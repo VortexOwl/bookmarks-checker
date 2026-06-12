@@ -9,7 +9,7 @@ from logging import (
     DEBUG, INFO, ERROR, WARNING, CRITICAL, getLevelNamesMapping, LogRecord
     )
 from os import makedirs
-from sys import stdout
+from sys import stdout, exit
 from typing import Any, Optional, Dict
 
 
@@ -196,6 +196,7 @@ class SmartLogger(LibLogger):
         *args: Any, 
         raw: bool = False,
         empty_console: bool = False,
+        is_continue: bool = False,
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
@@ -209,6 +210,7 @@ class SmartLogger(LibLogger):
             *args: Позиционные аргументы для форматирования сообщения.
             raw: Если True, сообщение выводится без стандартного форматирования.
             empty_console: Если True, подавляет вывод в консоль.
+            is_continue: Если True, продолжает работу программы после своего вызова.
             exc_info: Информация об исключении или флаг для её добавления.
             stack_info: Если True, добавляет информацию о стеке.
             stacklevel: Смещение уровня стека для корректного указания места вызова.
@@ -220,6 +222,8 @@ class SmartLogger(LibLogger):
         super().critical(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
 
+        if not is_continue:
+            exit()
     
     def fatal(
         self, 
@@ -227,6 +231,7 @@ class SmartLogger(LibLogger):
         *args: Any, 
         raw: bool = False,
         empty_console: bool = False,
+        is_continue: bool = False,
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
@@ -240,6 +245,7 @@ class SmartLogger(LibLogger):
             *args: Позиционные аргументы для форматирования сообщения.
             raw: Если True, сообщение выводится без стандартного форматирования.
             empty_console: Если True, подавляет вывод в консоль.
+            is_continue: Если True, продолжает работу программы после своего вызова.
             exc_info: Информация об исключении или флаг для её добавления.
             stack_info: Если True, добавляет информацию о стеке.
             stacklevel: Смещение уровня стека для корректного указания места вызова.
@@ -250,7 +256,9 @@ class SmartLogger(LibLogger):
         extra = self._prepare_extra(raw=raw, empty_console=empty_console, extra=extra)
         super().critical(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
-
+        
+        if not is_continue:
+            exit()
 
     def add_custom_level(
         self, 

@@ -1,7 +1,6 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
-from os.path import isfile
 from pathlib import Path
 from shutil import copy2 as shutil_copy2
 
@@ -25,33 +24,32 @@ class Report:
         """
         database_file: str = cfg.database_file
 
-        path_bookmarks: Path | None = cfg.path_bookmarks
+        path_source_database: Path | None = cfg.path_source_database
         path_data_folder: Path = Path.cwd() / "data"
 
         Path.mkdir(path_data_folder, exist_ok=True)
 
-        if path_bookmarks is None:
+        if path_source_database is None:
             cls._log.warning(msg="Указан пустой путь для базы данных закладок.")
-            if not isfile(path_data_folder / database_file):
+            if not (path_data_folder / database_file).is_file():
                 err = "По указанному пути отсутствует файл базы данных закладок."
                 cls._log.fatal(msg=err)
                 return err
             cls._log.info(msg="Проверяется старый файл базы данных закладок.")
         else:
             try:
-                shutil_copy2(path_bookmarks, path_data_folder / database_file)
+                shutil_copy2(path_source_database, path_data_folder / database_file)
             except FileNotFoundError:
                 err = "По указанному пути отсутствует файл базы данных закладок."
                 cls._log.fatal(msg=err)
                 return err
             except Exception as err:
-                cls._log.fatal(
-                    msg=(
-                        f"Произошла ошибка при копировании: {path_bookmarks}. "
+                err_msg: str = (
+                        f"Произошла ошибка при копировании: {path_source_database}. "
                         f"Ошибка: {type(err)} {err}"
                     )
-                )
-                return err
+                cls._log.fatal(msg=err_msg)
+                return err_msg
         return None
 
     @classmethod
@@ -70,7 +68,6 @@ class Report:
         """
         if cfg is None:
             cfg = Config()
-            cfg.update_config()
         
         report_file: str = cfg.report_file
         report_folder: str = cfg.report_folder
@@ -91,9 +88,17 @@ class Report:
 
             Path.mkdir(path_report_folder, exist_ok=True)
 
-            with report_path.open("w", encoding="utf-8") as file_result:
-                file_result.write(bookmarks_report)
-            
+            try:
+                with report_path.open("w", encoding="utf-8") as result_file:
+                    result_file.write(bookmarks_report)
+            except Exception as err:
+                err_msg: str = (
+                    f"Не удалось сохранить отчёт в файл: {report_path}. "
+                    f"Ошибка: {type(err)} {err}"
+                )
+                cls._log.fatal(msg=err_msg)
+                return None, None, err_msg
+
             cls._log.info(
                 msg=(
                     "Информация о количестве закладок в категориях "
@@ -106,8 +111,8 @@ class Report:
 
     @staticmethod
     async def clear_report_files(cfg : Config = Config()) -> dict[str, int | tuple[str]]:
-            """
-            Асинхронно и безопасно очищает папку от файлов.
-            Возвращает статистику по успешным удалениям и ошибкам.
-            """
-            return await uts.clearing_folder(clear_folder=cfg.report_folder)
+        """
+        Асинхронно и безопасно очищает папку от файлов.
+        Возвращает статистику по успешным удалениям и ошибкам.
+        """
+        return await uts.clearing_folder(clear_folder=cfg.report_folder)

@@ -211,7 +211,7 @@ def web_start() -> None:
         f"{__name__}:web", 
         host = sc.host, 
         port = sc.port, 
-        reload = sc.is_unicorn_reload
+        reload = sc.is_reload
     )
 
 

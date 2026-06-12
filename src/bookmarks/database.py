@@ -16,26 +16,21 @@ from aiosqlite import connect, Connection
 
 
 class BookmarksDatabase:
-    _cfg: Config = Config()
-    _bookmarks_folder: str = _cfg.bookmarks_folder
-    _db_path: Path = Path("data") / _cfg.database_file
     _log: SmartLogger = get_smart_logger()
     _ALLOWED_COLUMNS: set = {"id", "id, title", "guid, title"}
 
     @classmethod
-    async def _connect_database(cls) -> Connection:
+    async def _connect_database(cls, cfg: Config) -> Connection:
         """
         Открывает и возвращает асинхронное соединение с БД.
         Закрытие соединения — ответственность вызывающего кода.
         """
+        bookmarks_folder:str = cfg.bookmarks_folder
 
-        bookmarks_folder:str = cls._bookmarks_folder
-
-        conn = await connect(cls._db_path)
+        conn = await connect(cfg.path_data_folder)
         cls._log.debug(msg="Подключение к БД прошло успешно.")
         cls._log.info(msg=f'Начата проверка закладок папки "{bookmarks_folder}"')
         return conn
-        
 
     @classmethod
     async def _fetch_all(
@@ -57,14 +52,12 @@ class BookmarksDatabase:
         ) as cursor:
             return await cursor.fetchall()
 
-
     @classmethod
-    async def bookmarks_check(cls, conn: Connection, id_initial_folder: int) -> str:
+    async def bookmarks_check(cls, conn: Connection, cfg: Config, id_initial_folder: int) -> str:
         """
         Формирует отчёт по закладкам для указанной папки.
         """
-
-        bookmarks_folder:str = cls._bookmarks_folder
+        bookmarks_folder:str = cfg.bookmarks_folder
         category_reports: list[str] = []
         separator: str = f"\n{'-' * 93}\n"
         
@@ -137,9 +130,8 @@ class BookmarksDatabase:
 
         return separator.join(category_reports)
 
-
     @classmethod
-    async def create_bookmarks_report(cls, cfg: Config) -> str:
+    async def create_bookmarks_report(cls, cfg: Config = Config()) -> str:
         """
         Создаёт и возвращает отчёт по закладкам из заданной папки.
 
@@ -148,17 +140,13 @@ class BookmarksDatabase:
         
         В конце гарантированно закрывает соединение.
         """
-
-        cls._cfg = cfg
-        cls._bookmarks_folder = cls._cfg.bookmarks_folder
-        cls._db_path = Path("data") / cls._cfg.database_file
-
-        bookmarks_folder: str = cls._bookmarks_folder
+        
+        bookmarks_folder: str = cfg.bookmarks_folder
         result_check: str = ""
         conn: Connection | None = None
 
         try: 
-            conn = await cls._connect_database()
+            conn = await cls._connect_database(cfg=cfg)
             
             async with conn.execute(
                 "SELECT id FROM moz_bookmarks WHERE title = ?", 
@@ -168,6 +156,7 @@ class BookmarksDatabase:
 
             if initial_folder:
                 result_check = await cls.bookmarks_check(
+                    cfg=cfg,
                     conn=conn, 
                     id_initial_folder=initial_folder[0]
                 )

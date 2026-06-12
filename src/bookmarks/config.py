@@ -4,33 +4,45 @@
 from dataclasses import dataclass
 from pathlib import Path
 from platform import system
+from pydantic_settings import BaseSettings
 
 
-@dataclass
-class Config:
+class ServerConfig(BaseSettings):
+    host: str = "127.0.0.1"
+    port: int = 8000
+    is_unicorn_reload: bool = True
+
+
+class Config(BaseSettings):
     """
     Конфигурация для проведения анализа директории закладок браузера.
     """
-
     bookmarks_folder: str = 'KDE Store'
     report_folder: str = 'docs'
-    report_file: str = f'Bookmarks {bookmarks_folder}'
-    custom_report_file: str | None = None
+    data_folder: str = "data"
     database_file: str = 'places.sqlite'
-    browser: Path = Path('Floorp')
+    browser: str = 'Floorp'
     _default_profile_pattern: str = '*.default-default'
-    custom_profile: Path | None = None
-    path_bookmarks: Path | None = None
-    
-    def update_config(self) -> None:
-        if self.custom_report_file is None:
-            self.report_file: str = f'Bookmarks {self.bookmarks_folder}'
-        else:
-            self.report_file: str = self.custom_report_file
-        
+    custom_report_file: str | None = None
+    browser_profile: str | None = None
+
+    @property
+    def path_data_folder(self) -> Path:
+        return Path(self.data_folder) / self.database_file
+
+    @property
+    def report_file(self) -> str:
+        return (
+            f'Bookmarks {self.bookmarks_folder}'
+            if self.custom_report_file is None
+            else self.custom_report_file
+        )
+
+    @property
+    def path_source_database(self) -> Path | None:
         sys_name = system()
         path_user: Path = Path.home()
-        path_browser: Path | None = self.browser
+        path_browser: Path = Path(self.browser)
         path_profiles: Path
         path_profile_bookmarks: Path        
 
@@ -39,22 +51,19 @@ class Config:
         elif sys_name == 'Linux':
             path_browser = Path('.floorp')
         else:
-            path_browser = None
-            self.path_bookmarks = None
-            return
+            return None
 
         path_profiles = path_user / path_browser
 
-        if self.custom_profile is not None:
-            path_profile_bookmarks = path_profiles / self.custom_profile
+        if self.browser_profile is not None:
+            path_profile_bookmarks = path_profiles / self.browser_profile
         else:
             default_profile: Path = next(
                 (d for d in path_profiles.glob(self._default_profile_pattern) if d.is_dir()), 
                 None,
             )
             if default_profile is None:
-                self.path_bookmarks = None
-                return
+                return None
             path_profile_bookmarks = default_profile
     
-        self.path_bookmarks = path_profile_bookmarks / self.database_file
+        return path_profile_bookmarks / self.database_file

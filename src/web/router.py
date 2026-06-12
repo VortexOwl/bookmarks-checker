@@ -9,8 +9,8 @@ from typing import Annotated, Literal
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.bookmarks.config import Config
-from src.bookmarks.report import save_bookmarks_report, clear_report_files
+from src.bookmarks.config import Config, ServerConfig
+from src.bookmarks.report import Report
 
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
@@ -46,10 +46,9 @@ class WebConfig(BaseModel):
     """
     Pydantic модель для обработки сетевых данных, связанных с конфигурацией проекта.
     """
-
     browser: Browser = Browser.FLOORP
     bookmarks_folder: str | None = None
-    custom_profile: str | None = None
+    browser_profile: str | None = None
     custom_report_file: str | None = None
     is_default: IsYesOrNo | bool = IsYesOrNo.NO
 
@@ -78,7 +77,7 @@ class WebConfig(BaseModel):
                 
             )
         ] = None,
-        custom_profile: Annotated[
+        browser_profile: Annotated[
             str, 
             Form(
                 alias = "🪪 Кастомный профиль браузера", 
@@ -96,7 +95,7 @@ class WebConfig(BaseModel):
         return cls(
             browser = browser, 
             bookmarks_folder = bookmarks_folder, 
-            custom_profile = custom_profile, 
+            browser_profile = browser_profile, 
             custom_report_file = custom_report_file,
             is_default = is_default
         )
@@ -125,7 +124,6 @@ async def put_config(
     """
     Задает конфигурацию для утилиты анализа закладок браузера.
     """
-
     global cfg
     if web_config.is_default == IsYesOrNo.YES:
         cfg = copy(Config())
@@ -134,13 +132,12 @@ async def put_config(
     else:
         web_config.is_default = False
         if web_config.browser:
-            cfg.browser = web_config.browser
+            cfg.browser = web_config.browser.value
         if web_config.bookmarks_folder:
             cfg.bookmarks_folder = web_config.bookmarks_folder
-        cfg.custom_profile = web_config.custom_profile
+        cfg.browser_profile = web_config.browser_profile
         if web_config.custom_report_file:
             cfg.custom_report_file = web_config.custom_report_file
-        cfg.update_config()
     return web_config.model_dump()
 
 
@@ -169,17 +166,14 @@ async def get_report(
     """
     Возвращает отчет по анализу закладок браузера.
     """
-
     is_save_file: bool
     err_status_code: int = 400
     is_save_file = is_web_save_file == IsYesOrNo.YES
     copy_cfg = copy(cfg)
-
     if bookmarks_folder:
         copy_cfg.bookmarks_folder = bookmarks_folder
         copy_cfg.custom_report_file = None
-        copy_cfg.update_config()
-    bookmarks_report, report_path, err = await save_bookmarks_report(is_save_file, copy_cfg)
+    bookmarks_report, report_path, err = await Report.save_bookmarks_report(is_save_file, copy_cfg)
     if err is not None:
         if err == "По указанному пути отсутствует файл базы данных закладок.":
             err += " Укажите корректный профиль браузера."
@@ -208,11 +202,17 @@ async def clear_report_folder() -> dict:
     Безопасно очищает папку от файлов.
     Возвращает сводку по успешным удалениям и ошибкам.
     """
-    return await clear_report_files(cfg=cfg)
+    return await Report.clear_report_files(cfg=cfg)
 
 
 def web_start() -> None:
-    uvicorn_run("web.router:web", host="127.0.0.1", port=8000, reload=True)
+    sc = ServerConfig()
+    uvicorn_run(
+        f"{__name__}:web", 
+        host = sc.host, 
+        port = sc.port, 
+        reload = sc.is_unicorn_reload
+    )
 
 
 if __name__ == "__main__":

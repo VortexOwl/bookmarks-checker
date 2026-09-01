@@ -4,7 +4,7 @@
 from asyncio import to_thread as asyncio_to_thread
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, final
+from typing import Iterator
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #

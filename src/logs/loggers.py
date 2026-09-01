@@ -12,6 +12,8 @@ from os import makedirs
 from sys import stdout, exit
 from typing import Any, Optional, Dict
 
+from colorama import Fore as color_Fore
+
 
 class SmartLogger(LibLogger):
     """Logger с дополнительными возможностями форматирования и кастомными уровнями.
@@ -42,6 +44,7 @@ class SmartLogger(LibLogger):
         self,
         raw: bool,
         empty_console: bool,
+        pretty: bool,
         extra: Optional[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:
         """Формирует поле `extra` с флагами форматирования.
@@ -58,12 +61,12 @@ class SmartLogger(LibLogger):
             Обновлённый словарь `extra` или None.
         """
 
-        if raw or empty_console: 
+        if raw or empty_console or pretty: 
             if extra is None: extra = {}
             extra['raw'] = raw
             extra['empty_console'] = empty_console
+            extra['pretty'] = pretty
         return extra
-
 
 
     def debug(
@@ -72,6 +75,7 @@ class SmartLogger(LibLogger):
         *args: Any, 
         raw: bool = False,
         empty_console: bool = False,
+        pretty: bool = False,
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
@@ -92,7 +96,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
 
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, extra=extra)
+        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
         super().debug(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
     
@@ -103,6 +107,7 @@ class SmartLogger(LibLogger):
         *args: Any, 
         raw: bool = False,
         empty_console: bool = False,
+        pretty: bool = False,
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
@@ -123,7 +128,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
 
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, extra=extra)
+        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
         super().info(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
 
@@ -134,6 +139,7 @@ class SmartLogger(LibLogger):
         *args: Any, 
         raw: bool = False,
         empty_console: bool = False,
+        pretty: bool = False,
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
@@ -154,7 +160,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
         
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, extra=extra)
+        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
         super().warning(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
 
@@ -165,6 +171,7 @@ class SmartLogger(LibLogger):
         *args: Any, 
         raw: bool = False,
         empty_console: bool = False,
+        pretty: bool = False,
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
@@ -185,7 +192,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
 
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, extra=extra)
+        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
         super().error(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
 
@@ -196,6 +203,7 @@ class SmartLogger(LibLogger):
         *args: Any, 
         raw: bool = False,
         empty_console: bool = False,
+        pretty: bool = False,
         is_continue: bool = False,
         exc_info: Any = None, 
         stack_info: bool = False, 
@@ -218,7 +226,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
         
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, extra=extra)
+        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
         super().critical(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
 
@@ -231,6 +239,7 @@ class SmartLogger(LibLogger):
         *args: Any, 
         raw: bool = False,
         empty_console: bool = False,
+        pretty: bool = False,
         is_continue: bool = False,
         exc_info: Any = None, 
         stack_info: bool = False, 
@@ -329,8 +338,30 @@ class StreamHandler(LibStreamHandler):
         """
 
         super().__init__(stream)
-        self.normal_formatter = LibFormatter(fmt=basic_format, style="{", datefmt="%Y-%m-%d %H:%M:%S")
-        self.raw_formatter = LibFormatter(fmt="{message}", style="{")
+
+        self.normal_formatter = LibFormatter(
+            fmt=basic_format, 
+            style="{", 
+            datefmt="%Y-%m-%d %H:%M:%S"
+        )
+
+        self.raw_formatter = LibFormatter(
+            fmt="{message}", 
+            style="{"
+        )
+
+        info_fmt = f"{color_Fore.CYAN}{{levelname}}{color_Fore.RESET}:     {{message}}"
+        debug_fmt = f"{color_Fore.GREEN}{{levelname}}{color_Fore.RESET}:     {{message}}"
+        warning_fmt = f"{color_Fore.YELLOW}{{levelname}}{color_Fore.RESET}:     {{message}}"
+        error_fmt = f"{color_Fore.RED}{{levelname}}{color_Fore.RESET}:     {{message}}"
+        critical_fmt = f"{color_Fore.MAGENTA}{{levelname}}{color_Fore.RESET}:     {{message}}"
+
+        self.debug_formatter = LibFormatter(fmt=debug_fmt, style="{")
+        self.info_formatter = LibFormatter(fmt=info_fmt, style="{")
+        self.warning_formatter = LibFormatter(fmt=warning_fmt, style="{")
+        self.error_formatter = LibFormatter(fmt=error_fmt, style="{")
+        self.critical_formatter = LibFormatter(fmt=critical_fmt, style="{")
+
 
     def emit(self, record: LogRecord) -> None:
         """Выводит лог-запись в поток в зависимости от флагов записи.
@@ -347,6 +378,18 @@ class StreamHandler(LibStreamHandler):
         
         if getattr(record, 'raw', False):
             self.formatter = self.raw_formatter
+        elif getattr(record, 'pretty', False):
+            level = record.levelno
+            if level == DEBUG:
+                self.formatter = self.debug_formatter
+            elif level == INFO:
+                self.formatter = self.info_formatter
+            elif level == WARNING:
+                self.formatter = self.warning_formatter
+            elif level == ERROR:
+                self.formatter = self.error_formatter
+            elif level == CRITICAL:
+                self.formatter = self.critical_formatter
         else:
             self.formatter = self.normal_formatter
         
@@ -435,7 +478,7 @@ def get_smart_logger(name: str = "smart_logger", all_level: int = DEBUG) -> Smar
 
 
 libSetLoggerClass(SmartLogger)
-basic_format:str = ("{asctime} | {levelname} | "
+basic_format: str = ("{asctime} | {levelname} | "
     "{filename} -> {funcName}: line {lineno} | "
     "Message: {message}")
-
+pretty_format: str = (color_Fore.GREEN + "{levelname}" + color_Fore.RESET + ":     {message}")

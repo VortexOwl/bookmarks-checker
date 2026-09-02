@@ -1,6 +1,7 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
+from colorama import Fore as color_Fore
 from logging import (
     Logger as LibLogger, StreamHandler as LibStreamHandler, 
     FileHandler as LibFileHandler, Formatter as LibFormatter, 
@@ -11,8 +12,6 @@ from logging import (
 from os import makedirs
 from sys import stdout, exit
 from typing import Any, Optional, Dict
-
-from colorama import Fore as color_Fore
 
 
 class SmartLogger(LibLogger):

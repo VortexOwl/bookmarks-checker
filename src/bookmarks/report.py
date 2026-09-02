@@ -27,28 +27,28 @@ class Report:
         path_source_database: Path | None = cfg.path_source_database
         path_data_folder: Path = Path.cwd() / "data"
 
-        Path.mkdir(path_data_folder, exist_ok=True)
+        Path.mkdir(path_data_folder, exist_ok = True)
 
         if path_source_database is None:
-            cls._log.warning(msg="Указан пустой путь для базы данных закладок.")
+            cls._log.warning(msg = "Указан пустой путь для базы данных закладок.", pretty = True)
             if not (path_data_folder / database_file).is_file():
                 err = "По указанному пути отсутствует файл базы данных закладок."
-                cls._log.fatal(msg=err)
+                cls._log.error(msg = err, pretty = True)
                 return err
-            cls._log.info(msg="Проверяется старый файл базы данных закладок.")
+            cls._log.info(msg = "Проверяется старый файл базы данных закладок.", pretty = True)
         else:
             try:
                 shutil_copy2(path_source_database, path_data_folder / database_file)
             except FileNotFoundError:
                 err = "По указанному пути отсутствует файл базы данных закладок."
-                cls._log.fatal(msg=err)
+                cls._log.error(msg = err, pretty = True)
                 return err
             except Exception as err:
                 err_msg: str = (
                         f"Произошла ошибка при копировании: {path_source_database}. "
                         f"Ошибка: {type(err)} {err}"
                     )
-                cls._log.fatal(msg=err_msg)
+                cls._log.error(msg = err_msg, pretty = True)
                 return err_msg
         return None
 
@@ -74,12 +74,12 @@ class Report:
         path_report_folder: Path
         report_path: Path
         
-        if err := cls._save_db_in_data(cfg=cfg):
+        if err := cls._save_db_in_data(cfg = cfg):
             return None, None, err
 
         if not (bookmarks_report := await cls._bd.create_bookmarks_report(cfg=cfg)):
             err = "Указанная директория отсутствует в базе данных закладок."
-            cls._log.warning(msg=err)
+            cls._log.warning(msg = err, pretty = True)
             return None, None, err
         
         if is_save_file:
@@ -89,21 +89,22 @@ class Report:
             Path.mkdir(path_report_folder, exist_ok=True)
 
             try:
-                with report_path.open("w", encoding="utf-8") as result_file:
+                with report_path.open("w", encoding = "utf-8") as result_file:
                     result_file.write(bookmarks_report)
             except Exception as err:
                 err_msg: str = (
                     f"Не удалось сохранить отчёт в файл: {report_path}. "
                     f"Ошибка: {type(err)} {err}"
                 )
-                cls._log.fatal(msg=err_msg)
+                cls._log.error(msg = err_msg, pretty = True)
                 return None, None, err_msg
 
             cls._log.info(
-                msg=(
+                msg = (
                     "Информация о количестве закладок в категориях "
                     f"сохранена в файл: {report_path.name}"
-                )
+                ),
+                pretty = True
             )
             return bookmarks_report, report_path, None
         

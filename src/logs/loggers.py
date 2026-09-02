@@ -96,7 +96,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
 
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
+        extra = self._prepare_extra(pretty=pretty, raw=raw, empty_console=empty_console, extra=extra)
         super().debug(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
     
@@ -128,7 +128,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
 
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
+        extra = self._prepare_extra(pretty=pretty, raw=raw, empty_console=empty_console, extra=extra)
         super().info(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
 
@@ -160,7 +160,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
         
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
+        extra = self._prepare_extra(pretty=pretty, raw=raw, empty_console=empty_console, extra=extra)
         super().warning(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
 
@@ -192,7 +192,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
 
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
+        extra = self._prepare_extra(pretty=pretty, raw=raw, empty_console=empty_console, extra=extra)
         super().error(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
 
@@ -226,7 +226,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
         
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, pretty=pretty, extra=extra)
+        extra = self._prepare_extra(pretty=pretty, raw=raw, empty_console=empty_console, extra=extra)
         super().critical(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
 
@@ -262,7 +262,7 @@ class SmartLogger(LibLogger):
             **kwargs: Дополнительные параметры, пробрасываемые в базовый logger.
         """
         
-        extra = self._prepare_extra(raw=raw, empty_console=empty_console, extra=extra)
+        extra = self._prepare_extra(pretty=pretty, raw=raw, empty_console=empty_console, extra=extra)
         super().critical(msg, *args, exc_info=exc_info, stack_info=stack_info, 
                    stacklevel=stacklevel, extra=extra, **kwargs)
         

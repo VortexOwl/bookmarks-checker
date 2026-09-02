@@ -1,23 +1,64 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
+from asyncio import (
+    sleep as a_sleep, 
+    get_running_loop as a_get_running_loop, 
+    create_task as a_create_task
+)
+from contextlib import asynccontextmanager
 from copy import copy
 from enum import Enum
+from os import kill as os_kill, getpid as os_getpid
 from pydantic import BaseModel
+from signal import SIGINT as signal_SIGINT
 from typing import Annotated, Literal
+from webbrowser import open as web_open
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.bookmarks.config import Config, ServerConfig
 from src.bookmarks.report import Report
+from src.logs import get_smart_logger, SmartLogger
 
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
 # ----------------------------------------------------------------------------#
 from fastapi import FastAPI, Form, Depends, Query
-from fastapi.responses import Response, FileResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import (
+    Response, 
+    FileResponse, 
+    PlainTextResponse, 
+    RedirectResponse
+    )
 from uvicorn import run as uvicorn_run
+
+
+cfg = Config()
+log: SmartLogger = get_smart_logger()
+log.setLevel(cfg.log_level)
+
+
+async def open_browser() -> None:
+    sc = ServerConfig()
+    await a_sleep(1.5)
+    loop = a_get_running_loop()
+    loop.run_in_executor(None, web_open, f"http://{sc.host}:{sc.port}")
+
+
+@asynccontextmanager
+async def lifespan(web: FastAPI) -> None:
+    is_open_webbrowser = cfg.is_open_webbrowser
+    is_docker = cfg.is_docker
+
+    log.info(msg = "🚀 Сервер запускается...", pretty = True)
+    if is_open_webbrowser and not is_docker:
+        a_create_task(open_browser())
+    yield
+
+    log.info(msg = "🛑 Сервер останавливается...", pretty = True)
+    await a_sleep(1.5)
 
 
 web = FastAPI(
@@ -27,11 +68,9 @@ web = FastAPI(
         "tryItOutEnabled": True,
         "filter": True,
         "displayRequestDuration": True
-    }
+    },
+    lifespan = lifespan
 )
-
-cfg = Config()
-
 
 class Browser(str, Enum):
     FLOORP = "Floorp"
@@ -101,12 +140,27 @@ class WebConfig(BaseModel):
         )
 
 
-@web.get("/", include_in_schema=False)
+@web.get("/", include_in_schema = False)
 async def root():
     return RedirectResponse(
-        url="/docs",
-        status_code=307
+        url = "/docs",
+        status_code = 307
     )
+
+
+@web.get(
+    '/shutdown',
+    description = "Посылает запрос на остановку веб-сервера.",
+    tags = ["⚙️ Конфигурация"],
+    summary = "Остановить веб-сервер"
+)
+async def shutdown():
+    os_kill(os_getpid(), signal_SIGINT)
+    log.info(msg = "Запрос на остановку сервера отправлен...", pretty = True)
+    return PlainTextResponse(
+            content = "Запрос на остановку сервера отправлен.",
+            status_code = 202
+        )
 
 
 @web.put(
@@ -170,13 +224,24 @@ async def get_report(
     err_status_code: int = 400
     is_save_file = is_web_save_file == IsYesOrNo.YES
     copy_cfg = copy(cfg)
+    data_folder: str = cfg.data_folder
+    is_docker: bool = cfg.is_docker
+
     if bookmarks_folder:
         copy_cfg.bookmarks_folder = bookmarks_folder
         copy_cfg.custom_report_file = None
+    
+    log.info(
+        msg = f"Начат анализ закладок браузера в папке: {copy_cfg.bookmarks_folder}.",
+        pretty = True
+    )
     bookmarks_report, report_path, err = await Report.save_bookmarks_report(is_save_file, copy_cfg)
     if err is not None:
         if err == "По указанному пути отсутствует файл базы данных закладок.":
-            err += " Укажите корректный профиль браузера."
+            if is_docker:
+                err += f" Положите файл базы закладок браузера в примонтированный том: \"{data_folder}\"."
+            else:
+                err += " Укажите корректный профиль браузера."
             err_status_code = 404
         return PlainTextResponse(
             content = err,
@@ -188,7 +253,7 @@ async def get_report(
             filename = report_path.name,
             media_type = "text/plain"
         )
-    return PlainTextResponse(content=bookmarks_report)
+    return PlainTextResponse(content = bookmarks_report)
 
 
 @web.post(
@@ -202,7 +267,7 @@ async def clear_report_folder() -> dict:
     Безопасно очищает папку от файлов.
     Возвращает сводку по успешным удалениям и ошибкам.
     """
-    return await Report.clear_report_files(cfg=cfg)
+    return await Report.clear_report_files(cfg = cfg)
 
 
 def web_start() -> None:

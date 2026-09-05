@@ -1,34 +1,54 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
-from dataclasses import dataclass
-from os import getenv
 from pathlib import Path
 from platform import system
-from pydantic_settings import BaseSettings
+
+# ----------------------------------------------------------------------------#
+# External libraries                                                          #
+# ----------------------------------------------------------------------------#
+from pydantic_settings import BaseSettings, SettingsConfigDict, model_validator
 
 
 class ServerConfig(BaseSettings):
-    host: str = getenv('API_HOST', '0.0.0.0') if Path('/.dockerenv').exists() else getenv('API_HOST', '127.0.0.1')
-    port: int = getenv('API_PORT', 8000)
-    is_reload: bool = getenv('API_IS_RELOAD', False) if Path('/.dockerenv').exists() else getenv('API_IS_RELOAD', True)
+    """
+    Конфигурация uvicorn.
+    """
+    host: str = "127.0.0.1"
+    port: int = 8000
+    is_reload: bool = True
+
+    model_config = SettingsConfigDict(env_prefix="API_")
+
+    @model_validator(mode="before")
+    @classmethod
+    def detect_docker_env(cls, data: dict) -> dict:
+        if Path("/.dockerenv").exists():
+            if "host" not in data:
+                data["host"] = "0.0.0.0"
+            if "is_reload" not in data:
+                data["is_reload"] = False
+                
+        return data
 
 
 class Config(BaseSettings):
     """
     Конфигурация для проведения анализа директории закладок браузера.
     """
-    log_level: int = 10
-    is_open_webbrowser: bool = getenv('IS_OPEN_WEBBROWSER', True)
-    bookmarks_folder: str = getenv('APP_BOOKMARKS_TAG', 'KDE Store')
-    report_folder: str = getenv('APP_REPORT_FOLDER', 'docs')
-    data_folder: str = getenv('APP_DATA_FOLDER', 'data')
-    database_file: str = 'places.sqlite'
-    browser: str = getenv('APP_BROWSER', 'Floorp')
-    _default_profile_pattern: str = '*.default-default'
-    custom_report_file: str | None = None
-    browser_profile: str | None = None
+    model_config = SettingsConfigDict(env_prefix = "APP_")
 
+    log_level: int = 10
+    is_open_webbrowser: bool = True
+    _default_profile_pattern: str = '*.default-default'
+    bookmarks_folder: str = 'KDE Store'
+    browser: str = 'Floorp'
+    browser_profile: str | None = None
+    custom_report_file: str | None = None
+    database_file: str = 'places.sqlite'
+    data_folder: str = 'data'
+    report_folder: str = 'docs'
+    
     @property
     def path_data_folder(self) -> Path:
         return Path(self.data_folder) / self.database_file

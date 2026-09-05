@@ -1,39 +1,37 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
-from asyncio import (
-    sleep as a_sleep, 
-    get_running_loop as a_get_running_loop, 
-    create_task as a_create_task
-)
+from asyncio import create_task as a_create_task
+from asyncio import get_running_loop as a_get_running_loop
+from asyncio import sleep as a_sleep
 from contextlib import asynccontextmanager
 from copy import copy
 from enum import Enum
-from os import kill as os_kill, getpid as os_getpid
-from pydantic import BaseModel
+from os import getpid as os_getpid
+from os import kill as os_kill
 from signal import SIGINT as signal_SIGINT
-from typing import Annotated, Literal
+from typing import Annotated
 from webbrowser import open as web_open
+
+# ----------------------------------------------------------------------------#
+# External libraries                                                          #
+# ----------------------------------------------------------------------------#
+from fastapi import Depends, FastAPI, Form, Query
+from fastapi.responses import (
+    FileResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+)
+from pydantic import BaseModel
+from uvicorn import run as uvicorn_run
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.bookmarks.config import Config, ServerConfig
 from src.bookmarks.report import Report
-from src.logs import get_smart_logger, SmartLogger
-
-# ----------------------------------------------------------------------------#
-# External libraries                                                          #
-# ----------------------------------------------------------------------------#
-from fastapi import FastAPI, Form, Depends, Query
-from fastapi.responses import (
-    Response, 
-    FileResponse, 
-    PlainTextResponse, 
-    RedirectResponse
-    )
-from uvicorn import run as uvicorn_run
-
+from src.logs import SmartLogger, get_smart_logger
 
 cfg = Config()
 log: SmartLogger = get_smart_logger()
@@ -163,6 +161,20 @@ async def shutdown():
         )
 
 
+@web.post(
+    '/clear-report-folder',
+    description = "Безопасно очищает папку для отчетов от файлов.",
+    tags = ["⚙️ Конфигурация"],
+    summary = "Очистить от файлов директорию для формирования отчётов"
+)
+async def clear_report_folder() -> dict:
+    """
+    Безопасно очищает папку от файлов.
+    Возвращает сводку по успешным удалениям и ошибкам.
+    """
+    return await Report.clear_report_files(cfg = cfg)
+
+
 @web.put(
     '/config', 
     description = "Задает конфигурацию для утилиты анализа закладок браузера.",
@@ -256,21 +268,11 @@ async def get_report(
     return PlainTextResponse(content = bookmarks_report)
 
 
-@web.post(
-    '/clear-report-folder',
-    description = "Безопасно очищает папку для отчетов от файлов.",
-    tags = ["⚙️ Конфигурация"],
-    summary = "Очистить от файлов директорию для формирования отчётов"
-)
-async def clear_report_folder() -> dict:
-    """
-    Безопасно очищает папку от файлов.
-    Возвращает сводку по успешным удалениям и ошибкам.
-    """
-    return await Report.clear_report_files(cfg = cfg)
-
-
 def web_start() -> None:
+    """
+    Запускает веб-приложение FastAPI с использованием сервера Uvicorn.
+    Читает параметры хоста и порта из конфигурации приложения.
+    """
     sc = ServerConfig()
     uvicorn_run(
         f"{__name__}:web", 

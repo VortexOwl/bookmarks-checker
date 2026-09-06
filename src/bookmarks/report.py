@@ -7,7 +7,7 @@ from shutil import copy2 as shutil_copy2
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.bookmarks.config import Config
+from src.config import Config
 from src.bookmarks.database import BookmarksDatabase
 from src.logs import get_smart_logger, SmartLogger
 from src.utilities import Utilities as uts

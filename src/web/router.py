@@ -30,7 +30,7 @@ from uvicorn import run as uvicorn_run
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.bookmarks.config import Config, ServerConfig
+from src.config import Config, ServerConfig
 from src.bookmarks.report import Report
 from src.logs import SmartLogger, get_smart_logger
 

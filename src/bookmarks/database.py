@@ -6,7 +6,7 @@ from pathlib import Path
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.bookmarks.config import Config
+from src.config import Config
 from src.logs import get_smart_logger, SmartLogger
 
 # ----------------------------------------------------------------------------#

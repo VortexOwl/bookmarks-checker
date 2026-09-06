@@ -16,11 +16,12 @@ from webbrowser import open as web_open
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
 # ----------------------------------------------------------------------------#
-from fastapi import Depends, FastAPI, Form, Query
+from fastapi import Depends, FastAPI, Form, Query, status
 from fastapi.responses import (
     FileResponse,
     PlainTextResponse,
     RedirectResponse,
+    JSONResponse,
     Response,
 )
 from pydantic import BaseModel
@@ -142,7 +143,7 @@ class WebConfig(BaseModel):
 async def root():
     return RedirectResponse(
         url = "/docs",
-        status_code = 307
+        status_code = status.HTTP_307_TEMPORARY_REDIRECT
     )
 
 
@@ -157,22 +158,23 @@ async def shutdown():
     log.info(msg = "Запрос на остановку сервера отправлен...", pretty = True)
     return PlainTextResponse(
             content = "Запрос на остановку сервера отправлен.",
-            status_code = 202
+            status_code = status.HTTP_202_ACCEPTED
         )
 
 
 @web.post(
     '/clear-report-folder',
-    description = "Безопасно очищает папку для отчетов от файлов.",
+    description = "Очищает папку для отчетов от файлов.",
     tags = ["⚙️ Конфигурация"],
     summary = "Очистить от файлов директорию для формирования отчётов"
 )
 async def clear_report_folder() -> dict:
     """
-    Безопасно очищает папку от файлов.
+    Очищает папку от файлов.
     Возвращает сводку по успешным удалениям и ошибкам.
     """
-    return await Report.clear_report_files(cfg = cfg)
+    report = await Report.clear_report_files(cfg = cfg)
+    return JSONResponse(content = report, status_code = status.HTTP_200_OK)
 
 
 @web.put(
@@ -233,7 +235,7 @@ async def get_report(
     Возвращает отчет по анализу закладок браузера.
     """
     is_save_file: bool
-    err_status_code: int = 400
+    err_status_code: int = status.HTTP_400_BAD_REQUEST
     is_save_file = is_web_save_file == IsYesOrNo.YES
     copy_cfg = copy(cfg)
     data_folder: str = cfg.data_folder
@@ -254,7 +256,7 @@ async def get_report(
                 err += f" Положите файл базы закладок браузера в примонтированный том: \"{data_folder}\"."
             else:
                 err += " Укажите корректный профиль браузера."
-            err_status_code = 404
+            err_status_code = status.HTTP_404_NOT_FOUND
         return PlainTextResponse(
             content = err,
             status_code = err_status_code
@@ -263,9 +265,13 @@ async def get_report(
         return FileResponse(
             path = report_path,
             filename = report_path.name,
-            media_type = "text/plain"
+            media_type = "text/plain",
+            status_code=status.HTTP_200_OK
         )
-    return PlainTextResponse(content = bookmarks_report)
+    return PlainTextResponse(
+        content = bookmarks_report, 
+        status_code=status.HTTP_200_OK
+        )
 
 
 def web_start() -> None:

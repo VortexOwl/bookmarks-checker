@@ -7,11 +7,14 @@ from shutil import copy2 as shutil_copy2
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.config import Config
 from src.app.database import BookmarksDatabase as bmd
-from src.logs import get_smart_logger, SmartLogger
+from src.config import Config
+from src.logs import SmartLogger, get_smart_logger
 from src.utilities import Utilities as uts
 
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
 
 class ApplicationService:
     _log: SmartLogger = get_smart_logger()

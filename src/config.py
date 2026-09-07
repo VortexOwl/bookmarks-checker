@@ -10,6 +10,9 @@ from platform import system
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
 
 class ServerConfig(BaseSettings):
     """

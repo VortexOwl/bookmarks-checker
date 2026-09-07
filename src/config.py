@@ -9,6 +9,9 @@ from platform import system
 # ----------------------------------------------------------------------------#
 from pydantic_settings import BaseSettings, SettingsConfigDict, model_validator
 
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
 
 class ServerConfig(BaseSettings):
     """

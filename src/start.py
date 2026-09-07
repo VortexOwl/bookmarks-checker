@@ -10,6 +10,9 @@ from utilities.basic_utilities_project import add_workdir_in_PATH
 add_workdir_in_PATH()
 from src.app import ApplicationService
 
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
 
 def start() -> None:
     """Точка входа: запускает асинхронное сохранение отчёта по закладкам."""

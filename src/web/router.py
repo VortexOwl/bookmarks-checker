@@ -19,9 +19,9 @@ from webbrowser import open as web_open
 from fastapi import Depends, FastAPI, Form, Query, status
 from fastapi.responses import (
     FileResponse,
+    JSONResponse,
     PlainTextResponse,
     RedirectResponse,
-    JSONResponse,
     Response,
 )
 from pydantic import BaseModel
@@ -30,9 +30,13 @@ from uvicorn import run as uvicorn_run
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.config import Config, ServerConfig
 from src.app import ApplicationService as app
+from src.config import Config, ServerConfig
 from src.logs import SmartLogger, get_smart_logger
+
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
 
 cfg = Config()
 log: SmartLogger = get_smart_logger()

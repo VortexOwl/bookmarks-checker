@@ -1,19 +1,17 @@
 # ----------------------------------------------------------------------------#
-# Embedded libraries                                                          #
+# External libraries                                                          #
 # ----------------------------------------------------------------------------#
-from pathlib import Path
+from aiosqlite import Connection, connect
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
-from src.bookmarks.config import Config
-from src.logs import get_smart_logger, SmartLogger
+from src.config import Config
+from src.logs import SmartLogger, get_smart_logger
 
 # ----------------------------------------------------------------------------#
-# External libraries                                                          #
+# Application code                                                            #
 # ----------------------------------------------------------------------------#
-from aiosqlite import connect, Connection
-
 
 class BookmarksDatabase:
     _log: SmartLogger = get_smart_logger()

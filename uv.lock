@@ -47,12 +47,14 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
+    { name = "colorama" },
     { name = "fastapi", extra = ["standard"] },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.22.1" },
+    { name = "colorama", specifier = ">=0.4.6" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.136.3" },
 ]
 

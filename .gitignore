@@ -1,8 +1,14 @@
+# Python-generated files
 __pycache__/
-/docs/
-/logs/
-/data/places.sqlite
-.venv/
 *.egg-info/
 dist/
 build/
+
+# Virtual environments
+.venv/
+
+# Local project files
+/docs/
+/logs/
+/data/
+

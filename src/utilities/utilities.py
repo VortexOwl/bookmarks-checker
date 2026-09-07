@@ -2,15 +2,18 @@
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
 from asyncio import to_thread as asyncio_to_thread
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
 
 # ----------------------------------------------------------------------------#
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from logs import get_smart_logger
 
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
 
 @dataclass
 class Utilities:

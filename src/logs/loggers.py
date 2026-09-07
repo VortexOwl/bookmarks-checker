@@ -1,18 +1,34 @@
 # ----------------------------------------------------------------------------#
 # Embedded libraries                                                          #
 # ----------------------------------------------------------------------------#
-from colorama import Fore as color_Fore
 from logging import (
-    Logger as LibLogger, StreamHandler as LibStreamHandler, 
-    FileHandler as LibFileHandler, Formatter as LibFormatter, 
-    addLevelName as libAddLevelName, setLoggerClass as libSetLoggerClass, 
-    getLogger as libGetLogger, 
-    DEBUG, INFO, ERROR, WARNING, CRITICAL, getLevelNamesMapping, LogRecord
-    )
+    CRITICAL,
+    DEBUG,
+    ERROR,
+    INFO,
+    WARNING,
+    LogRecord,
+    getLevelNamesMapping,
+)
+from logging import FileHandler as LibFileHandler
+from logging import Formatter as LibFormatter
+from logging import Logger as LibLogger
+from logging import StreamHandler as LibStreamHandler
+from logging import addLevelName as libAddLevelName
+from logging import getLogger as libGetLogger
+from logging import setLoggerClass as libSetLoggerClass
 from os import makedirs
-from sys import stdout, exit
-from typing import Any, Optional, Dict
+from sys import exit, stdout
+from typing import Any
 
+# ----------------------------------------------------------------------------#
+# External libraries                                                          #
+# ----------------------------------------------------------------------------#
+from colorama import Fore as color_Fore
+
+# ----------------------------------------------------------------------------#
+# Application code                                                            #
+# ----------------------------------------------------------------------------#
 
 class SmartLogger(LibLogger):
     """Logger с дополнительными возможностями форматирования и кастомными уровнями.
@@ -45,8 +61,8 @@ class SmartLogger(LibLogger):
         pretty: bool,
         raw: bool,
         empty_console: bool,
-        extra: Optional[Dict[str, Any]],
-    ) -> Optional[Dict[str, Any]]:
+        extra: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
         """Подготавливает словарь `extra` с параметрами форматирования.
 
         Если хотя бы один из флагов форматирования установлен в `True`,
@@ -83,7 +99,7 @@ class SmartLogger(LibLogger):
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
-        extra: Optional[Dict[str, Any]] = None, 
+        extra: dict[str, Any] | None = None, 
         **kwargs: Any,
     ) -> None:
         """Записывает сообщение уровня `DEBUG` с дополнительными параметрами форматирования.
@@ -116,7 +132,7 @@ class SmartLogger(LibLogger):
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
-        extra: Optional[Dict[str, Any]] = None, 
+        extra: dict[str, Any] | None = None, 
         **kwargs: Any,
     ) -> None:
         """Записывает сообщение уровня `INFO` с дополнительными параметрами форматирования.
@@ -149,7 +165,7 @@ class SmartLogger(LibLogger):
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
-        extra: Optional[Dict[str, Any]] = None, 
+        extra: dict[str, Any] | None = None, 
         **kwargs: Any,
     ) -> None:
         """Записывает сообщение уровня `WARNING` с дополнительными параметрами форматирования.
@@ -182,7 +198,7 @@ class SmartLogger(LibLogger):
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
-        extra: Optional[Dict[str, Any]] = None, 
+        extra: dict[str, Any] | None = None, 
         **kwargs: Any,
     ) -> None:
         """Записывает сообщение уровня `ERROR` с дополнительными параметрами форматирования.
@@ -216,7 +232,7 @@ class SmartLogger(LibLogger):
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
-        extra: Optional[Dict[str, Any]] = None, 
+        extra: dict[str, Any] | None = None, 
         **kwargs: Any,
     ) -> None:
         """Записывает сообщение уровня `CRITICAL` с дополнительными параметрами форматирования.
@@ -253,7 +269,7 @@ class SmartLogger(LibLogger):
         exc_info: Any = None, 
         stack_info: bool = False, 
         stacklevel: int = 2, 
-        extra: Optional[Dict[str, Any]] = None, 
+        extra: dict[str, Any] | None = None, 
         **kwargs: Any,
     ) -> None:
         """Записывает сообщение уровня `CRITICAL` с дополнительными параметрами форматирования.
@@ -284,7 +300,7 @@ class SmartLogger(LibLogger):
         level_name: str, 
         level_num: int, 
         is_duplicate_level_num: bool = False, 
-        filename: Optional[str] = None, 
+        filename: str | None = None, 
         is_create_file_level: bool = True
     ) -> None:
         """Регистрирует пользовательский уровень логирования и метод для него.
@@ -387,7 +403,7 @@ class StreamHandler(LibStreamHandler):
         """
         
         if getattr(record, 'empty_console', False):
-            return None
+            return
         
         if getattr(record, 'raw', False):
             self.formatter = self.raw_formatter
@@ -409,7 +425,7 @@ class StreamHandler(LibStreamHandler):
         super().emit(record)
 
 
-def add_handler(logger: SmartLogger, level: int, filename: Optional[str] = None, exact: bool = False) -> None:
+def add_handler(logger: SmartLogger, level: int, filename: str | None = None, exact: bool = False) -> None:
     """Добавляет обработчик к logger.
 
     Если указан `filename`, создаётся файловый обработчик; в противном

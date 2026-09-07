@@ -7,7 +7,8 @@ from platform import system
 # ----------------------------------------------------------------------------#
 # External libraries                                                          #
 # ----------------------------------------------------------------------------#
-from pydantic_settings import BaseSettings, SettingsConfigDict, model_validator
+from pydantic import model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ServerConfig(BaseSettings):
@@ -43,6 +44,7 @@ class Config(BaseSettings):
     _default_profile_pattern: str = '*.default-default'
     bookmarks_folder: str = 'KDE Store'
     browser: str = 'Floorp'
+    browser_folder: str = '.floorp'
     browser_profile: str | None = None
     custom_report_file: str | None = None
     database_file: str = 'places.sqlite'
@@ -69,13 +71,14 @@ class Config(BaseSettings):
         sys_name = system()
         path_user: Path = Path.home()
         path_browser: Path = Path(self.browser)
+        path_browser_folder: Path = Path(self.browser_folder)
         path_profiles: Path
         path_profile_bookmarks: Path        
 
         if sys_name == 'Windows':
             path_browser = Path('AppData') / 'Roaming' / path_browser / 'Profiles'
         elif sys_name == 'Linux':
-            path_browser = Path(getenv('APP_BROWSER_FOLDER', '.floorp'))
+            path_browser = path_browser_folder
         else:
             return None
 

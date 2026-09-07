@@ -31,7 +31,7 @@ from uvicorn import run as uvicorn_run
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.config import Config, ServerConfig
-from src.bookmarks.report import Report
+from src.app import ApplicationService as app
 from src.logs import SmartLogger, get_smart_logger
 
 cfg = Config()
@@ -173,7 +173,7 @@ async def clear_report_folder() -> dict:
     Очищает папку от файлов.
     Возвращает сводку по успешным удалениям и ошибкам.
     """
-    report = await Report.clear_report_files(cfg = cfg)
+    report = await app.clear_report_files(cfg = cfg)
     return JSONResponse(content = report, status_code = status.HTTP_200_OK)
 
 
@@ -249,7 +249,7 @@ async def get_report(
         msg = f"Начат анализ закладок браузера в папке: {copy_cfg.bookmarks_folder}.",
         pretty = True
     )
-    bookmarks_report, report_path, err = await Report.save_bookmarks_report(is_save_file, copy_cfg)
+    bookmarks_report, report_path, err = await app.save_bookmarks_report(is_save_file, copy_cfg)
     if err is not None:
         if err == "По указанному пути отсутствует файл базы данных закладок.":
             if is_docker:

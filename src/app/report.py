@@ -8,13 +8,12 @@ from shutil import copy2 as shutil_copy2
 # Project modules                                                             #
 # ----------------------------------------------------------------------------#
 from src.config import Config
-from src.bookmarks.database import BookmarksDatabase
+from src.app.database import BookmarksDatabase as bmd
 from src.logs import get_smart_logger, SmartLogger
 from src.utilities import Utilities as uts
 
 
-class Report:
-    _bd: BookmarksDatabase = BookmarksDatabase()
+class ApplicationService:
     _log: SmartLogger = get_smart_logger()
 
     @classmethod
@@ -77,7 +76,7 @@ class Report:
         if err := cls._save_db_in_data(cfg = cfg):
             return None, None, err
 
-        if not (bookmarks_report := await cls._bd.create_bookmarks_report(cfg=cfg)):
+        if not (bookmarks_report := await bmd.create_bookmarks_report(cfg=cfg)):
             err = "Указанная директория отсутствует в базе данных закладок."
             cls._log.warning(msg = err, pretty = True)
             return None, None, err

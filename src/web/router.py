@@ -55,25 +55,26 @@ async def lifespan(web: FastAPI) -> None:
     is_open_webbrowser = cfg.is_open_webbrowser
     is_docker = cfg.is_docker
 
-    log.info(msg = "🚀 Сервер запускается...", pretty = True)
+    log.info(msg="🚀 Сервер запускается...", pretty=True)
     if is_open_webbrowser and not is_docker:
         a_create_task(open_browser())
     yield
 
-    log.info(msg = "🛑 Сервер останавливается...", pretty = True)
+    log.info(msg="🛑 Сервер останавливается...", pretty=True)
     await a_sleep(1.5)
 
 
 web = FastAPI(
-    title="📚 Bookmarks API", 
-    swagger_ui_parameters = {
+    title="📚 Bookmarks API",
+    swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
         "tryItOutEnabled": True,
         "filter": True,
-        "displayRequestDuration": True
+        "displayRequestDuration": True,
     },
-    lifespan = lifespan
+    lifespan=lifespan,
 )
+
 
 class Browser(str, Enum):
     FLOORP = "Floorp"
@@ -88,6 +89,7 @@ class WebConfig(BaseModel):
     """
     Pydantic модель для обработки сетевых данных, связанных с конфигурацией проекта.
     """
+
     browser: Browser = Browser.FLOORP
     bookmarks_folder: str | None = None
     browser_profile: str | None = None
@@ -99,99 +101,73 @@ class WebConfig(BaseModel):
         cls,
         is_default: Annotated[
             IsYesOrNo,
-            Form(
-                alias = "📜 Установить значения по умолчанию", 
-                examples = [IsYesOrNo.NO]
-            )
+            Form(alias="📜 Установить значения по умолчанию", examples=[IsYesOrNo.NO]),
         ],
         browser: Annotated[
-            Browser, 
-            Form(
-                alias = "🌎 Браузер", 
-                examples = [Browser.FLOORP]
-            )
+            Browser, Form(alias="🌎 Браузер", examples=[Browser.FLOORP])
         ],
         bookmarks_folder: Annotated[
-            str, 
-            Form(
-                alias = "🏙️ Директория закладок", 
-                examples = [""]
-                
-            )
+            str, Form(alias="🏙️ Директория закладок", examples=[""])
         ] = None,
         browser_profile: Annotated[
-            str, 
-            Form(
-                alias = "🪪 Кастомный профиль браузера", 
-                examples = [""]
-                
-            )
+            str, Form(alias="🪪 Кастомный профиль браузера", examples=[""])
         ] = None,
         custom_report_file: Annotated[
-            str, Form(
-                alias = "📁 Название файла репорта", 
-                examples = [""]
-            )
-        ] = None
+            str, Form(alias="📁 Название файла репорта", examples=[""])
+        ] = None,
     ):
         return cls(
-            browser = browser, 
-            bookmarks_folder = bookmarks_folder, 
-            browser_profile = browser_profile, 
-            custom_report_file = custom_report_file,
-            is_default = is_default
+            browser=browser,
+            bookmarks_folder=bookmarks_folder,
+            browser_profile=browser_profile,
+            custom_report_file=custom_report_file,
+            is_default=is_default,
         )
 
 
-@web.get("/", include_in_schema = False)
+@web.get("/", include_in_schema=False)
 async def root():
-    return RedirectResponse(
-        url = "/docs",
-        status_code = status.HTTP_307_TEMPORARY_REDIRECT
-    )
+    return RedirectResponse(url="/docs", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 
 
 @web.get(
-    '/shutdown',
-    description = "Посылает запрос на остановку веб-сервера.",
-    tags = ["⚙️ Конфигурация"],
-    summary = "Остановить веб-сервер"
+    "/shutdown",
+    description="Посылает запрос на остановку веб-сервера.",
+    tags=["⚙️ Конфигурация"],
+    summary="Остановить веб-сервер",
 )
 async def shutdown():
     os_kill(os_getpid(), signal_SIGINT)
-    log.info(msg = "Запрос на остановку сервера отправлен...", pretty = True)
+    log.info(msg="Запрос на остановку сервера отправлен...", pretty=True)
     return PlainTextResponse(
-            content = "Запрос на остановку сервера отправлен.",
-            status_code = status.HTTP_202_ACCEPTED
-        )
+        content="Запрос на остановку сервера отправлен.",
+        status_code=status.HTTP_202_ACCEPTED,
+    )
 
 
 @web.post(
-    '/clear-report-folder',
-    description = "Очищает папку для отчетов от файлов.",
-    tags = ["⚙️ Конфигурация"],
-    summary = "Очистить от файлов директорию для формирования отчётов"
+    "/clear-report-folder",
+    description="Очищает папку для отчетов от файлов.",
+    tags=["⚙️ Конфигурация"],
+    summary="Очистить от файлов директорию для формирования отчётов",
 )
 async def clear_report_folder() -> dict:
     """
     Очищает папку от файлов.
     Возвращает сводку по успешным удалениям и ошибкам.
     """
-    report = await app.clear_report_files(cfg = cfg)
-    return JSONResponse(content = report, status_code = status.HTTP_200_OK)
+    report = await app.clear_report_files(cfg=cfg)
+    return JSONResponse(content=report, status_code=status.HTTP_200_OK)
 
 
 @web.put(
-    '/config', 
-    description = "Задает конфигурацию для утилиты анализа закладок браузера.",
-    tags = ["⚙️ Конфигурация"], 
-    summary = "Задать конфигурацию"
+    "/config",
+    description="Задает конфигурацию для утилиты анализа закладок браузера.",
+    tags=["⚙️ Конфигурация"],
+    summary="Задать конфигурацию",
 )
 async def put_config(
-    web_config: Annotated[
-        WebConfig, 
-        Depends(WebConfig.web_config_form)
-    ]
+    web_config: Annotated[WebConfig, Depends(WebConfig.web_config_form)],
 ) -> dict[str, object]:
     """
     Задает конфигурацию для утилиты анализа закладок браузера.
@@ -214,26 +190,26 @@ async def put_config(
 
 
 @web.get(
-    '/bookmarks-report', 
-    description = "Возвращает отчет по анализу закладок браузера.", 
-    tags = ["📊 Анализ закладок"], 
-    summary = "Получить отчёт по анализу директории закладок"
+    "/bookmarks-report",
+    description="Возвращает отчет по анализу закладок браузера.",
+    tags=["📊 Анализ закладок"],
+    summary="Получить отчёт по анализу директории закладок",
 )
 async def get_report(
     is_web_save_file: Annotated[
-        IsYesOrNo, 
+        IsYesOrNo,
         Query(
-            alias = "💾 Сохранить файл", 
-            examples = [IsYesOrNo.YES],
-        )
+            alias="💾 Сохранить файл",
+            examples=[IsYesOrNo.YES],
+        ),
     ],
     bookmarks_folder: Annotated[
-        str, 
+        str,
         Query(
-            alias = "🏙️ Директория закладок", 
-            examples = [None], 
-        )
-    ] = None
+            alias="🏙️ Директория закладок",
+            examples=[None],
+        ),
+    ] = None,
 ) -> Response:
     """
     Возвращает отчет по анализу закладок браузера.
@@ -248,34 +224,30 @@ async def get_report(
     if bookmarks_folder:
         copy_cfg.bookmarks_folder = bookmarks_folder
         copy_cfg.custom_report_file = None
-    
+
     log.info(
-        msg = f"Начат анализ закладок браузера в папке: {copy_cfg.bookmarks_folder}.",
-        pretty = True
+        msg=f"Начат анализ закладок браузера в папке: {copy_cfg.bookmarks_folder}.",
+        pretty=True,
     )
-    bookmarks_report, report_path, err = await app.save_bookmarks_report(is_save_file, copy_cfg)
+    bookmarks_report, report_path, err = await app.save_bookmarks_report(
+        is_save_file, copy_cfg
+    )
     if err is not None:
         if err == "По указанному пути отсутствует файл базы данных закладок.":
             if is_docker:
-                err += f" Положите файл базы закладок браузера в примонтированный том: \"{data_folder}\"."
+                err += f' Положите файл базы закладок браузера в примонтированный том: "{data_folder}".'
             else:
                 err += " Укажите корректный профиль браузера."
             err_status_code = status.HTTP_404_NOT_FOUND
-        return PlainTextResponse(
-            content = err,
-            status_code = err_status_code
-        )
+        return PlainTextResponse(content=err, status_code=err_status_code)
     if is_save_file:
         return FileResponse(
-            path = report_path,
-            filename = report_path.name,
-            media_type = "text/plain",
-            status_code=status.HTTP_200_OK
+            path=report_path,
+            filename=report_path.name,
+            media_type="text/plain",
+            status_code=status.HTTP_200_OK,
         )
-    return PlainTextResponse(
-        content = bookmarks_report, 
-        status_code=status.HTTP_200_OK
-        )
+    return PlainTextResponse(content=bookmarks_report, status_code=status.HTTP_200_OK)
 
 
 def web_start() -> None:
@@ -284,12 +256,7 @@ def web_start() -> None:
     Читает параметры хоста и порта из конфигурации приложения.
     """
     sc = ServerConfig()
-    uvicorn_run(
-        f"{__name__}:web", 
-        host = sc.host, 
-        port = sc.port, 
-        reload = sc.is_reload
-    )
+    uvicorn_run(f"{__name__}:web", host=sc.host, port=sc.port, reload=sc.is_reload)
 
 
 if __name__ == "__main__":
